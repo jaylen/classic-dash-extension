@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.classic-dash" path="/org/gnome/shell/extensions/classic-dash/">
+    <key name="show-app-menu" type="b">
+      <default>true</default>
+      <summary>Show applications menu</summary>
+      <description>
+        Show menu with installed applications
+      </description>
+    </key>
+    <key name="show-favourites" type="b">
+      <default>true</default>
+      <summary>Show favourites panel</summary>
+      <description>
+        Show panel with favourite application launchers
+      </description>
+    </key>
+    <key name="show-calendar" type="b">
+      <default>true</default>
+      <summary>Show calendar panel</summary>
+      <description>
+        Show panel date, time, and weekday
+      </description>
+    </key>
+    <key name="show-date" type="b">
+      <default>true</default>
+      <summary>Show date on the calendar panel</summary>
+      <description>
+        Show date on the calendar panel
+      </description>
+    </key>
+    <key name="show-topbar-in-overview" type="b">
+      <default>false</default>
+      <summary>Show topbar in overview mode</summary>
+      <description>
+        When overview is showing, show standard GNOME topbar
+      </description>
+    </key>
+    <key name="show-sys-menu" type="b">
+      <default>true</default>
+      <summary>Show system menu</summary>
+      <description>
+        Show menu with system actions
+      </description>
+    </key>
+  </schema>
+</schemalist>

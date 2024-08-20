@@ -1,0 +1,130 @@
+
+.classic-dash-panel {
+  padding: 0 0.1em;
+  margin: 0;
+  background-color: #393a3f;
+  min-height: 2.0em;
+}
+
+.classic-panel {
+  margin: 0.1em 0;
+}
+
+.classic-icon {
+  margin: 1px;
+  padding: 1px;
+}
+
+.classic-button {
+  margin: 0.2em;
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+}
+
+.classic-button:hover {
+  background-color: #494a50;
+}
+
+.classic-button:active {
+  background-color: #55565e;
+}
+
+.classic-button.strong {
+  background-color: #323232;
+}
+
+.classic-button.width-12 {
+  max-width: 12.0em;
+  -st-natural-width: 12.0em;
+}
+
+.classic-button.width-20 {
+  max-width: 20.0em;
+  -st-natural-width: 20.0em;
+}
+
+.classic-button.height-2 {
+  min-height: 2.0em;
+}
+
+.classic-button.bg {
+  background-color: #3d3e43;
+}
+
+.classic-button.normal {
+  background-color: #303136;
+}
+
+.classic-button.fg {
+  background-color: #27282a;
+}
+
+.classic-button.selected {
+  background-color: #55565e;
+}
+
+.classic-button.framed {
+  border: 0.15em solid #5b7e9c;
+}
+
+.classic-button.attention {
+  box-shadow: inset 0 0 0 0.1em #9e7224;
+}
+
+.classic-button.special {
+  background-color: #333333;
+}
+
+.classic-label {
+  padding: 0.1em 0.5em;
+  color: #dadada;
+}
+
+.classic-label.insensitive {
+  color: #6c6c6c;
+}
+
+.classic-label.bold {
+  font-weight: bold;
+}
+
+.classic-label.mono {
+  font-family: monospace;
+}
+
+.classic-label.bg {
+  color: #959595;
+}
+
+.classic-label.fg {
+  color: #e8e8e8;
+}
+
+.classic-tooltip {
+  border-radius: 0.3em;
+  background-color: #373737;
+  padding: 0.5em;
+}
+
+.classic-popup-menu {
+  border-radius: 0.4em;
+  background-color: #373737;
+  padding: 0.5em;
+}
+
+.classic-menu-item-separator {
+  height: 1px;
+  background-color: #5c5c5c;
+  margin: 0.3em 0.6em;
+}
+
+.classic-app-menu-separator {
+  width: 0;
+  margin: 0.6em 0.3em;
+}
+
+.classic-calendar {
+  border-radius: 0.3em;
+  background-color: #3c3c3c;
+  padding: 0.5em;
+}
