@@ -26,8 +26,8 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Menu = Me.imports.src.menu;
 const Buttons = Me.imports.src.buttons;
-const AppFavorites = imports.ui.appFavorites;
 
+const AppFavorites = imports.ui.appFavorites;
 const Main = imports.ui.main;
 
 class CatMenuItem extends Menu.MenuItem {
@@ -139,7 +139,7 @@ class ApplicationsMenu extends St.BoxLayout {
         // add button to show all apps
         let show_apps_button = new Buttons.PushButton();
         show_apps_button.set_label_text('Show All Applications');
-        show_apps_button.set_icon_name('view-grid');
+        show_apps_button.set_icon_name('view-grid-symbolic');
         show_apps_button.connectObject('clicked', this._show_all_apps.bind(this), this);
         pane.add_child(show_apps_button);
       }

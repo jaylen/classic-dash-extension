@@ -246,11 +246,6 @@ var WinButtonMenu = class extends PopupMenu {
       }
     }
 
-    let close = this.add_menu_item('Close Window', this._close_window.bind(this));
-    close.set_sensitive(this._window.can_close());
-
-    this.add_separator_menu_item();
-
     let maximized = this._window.get_maximized() === Meta.MaximizeFlags.BOTH;
     let max_text = maximized ? 'Unmaximise' : 'Maximise';
     let maximise = this.add_menu_item(max_text, this._toggle_maximise.bind(this));
@@ -259,6 +254,11 @@ var WinButtonMenu = class extends PopupMenu {
     let min_text = this._window.minimized ? 'Unminimise' : 'Minimise';
     let minimise = this.add_menu_item(min_text, this._toggle_minimise.bind(this));
     minimise.set_sensitive(this._window.can_minimize());
+
+    this.add_separator_menu_item();
+
+    let close = this.add_menu_item('Close Window', this._close_window.bind(this));
+    close.set_sensitive(this._window.can_close());
 
     this._window.connectObject(
       'unmanaging', this._set_unmanageable.bind(this),

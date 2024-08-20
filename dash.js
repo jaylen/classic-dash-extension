@@ -19,9 +19,7 @@
  */
 
 const Main = imports.ui.main;
-const GObject = imports.gi.GObject;
-const Clutter = imports.gi.Clutter;
-const Meta = imports.gi.Meta;
+const { GObject, Meta, Clutter } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -82,8 +80,6 @@ var Dash = class extends Elements.BoxPanel {
       trackFullscreen: true,
     });
 
-    this._hide_topbar();
-
   }
 
   _destroy() {
@@ -137,21 +133,13 @@ var Dash = class extends Elements.BoxPanel {
 
   _move_top_bar(top) {
     if (PanelBox.has_allocation()) {
-      this._top_bar_transition(top);
+      PanelBox.y = top;
     } else {
       let slot = PanelBox.connect('notify::allocation', () => {
-        this._top_bar_transition(top);
+        PanelBox.y = top;
         PanelBox.disconnect(slot);
       });
     }
-  }
-
-  _top_bar_transition(top) {
-    PanelBox.ease({
-      y: top,
-      duration: 50,
-      mode: Clutter.AnimationMode.EASE_OUT_QUAD
-    });
   }
 
 }

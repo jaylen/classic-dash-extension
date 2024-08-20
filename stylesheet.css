@@ -64,7 +64,7 @@
 }
 
 .classic-button.framed {
-  border: 0.15em solid #5b7e9c;
+  border: 0.15em solid #5b7e9c !important;
 }
 
 .classic-button.attention {
@@ -72,7 +72,7 @@
 }
 
 .classic-button.special {
-  background-color: #333333;
+  border: 0.15em solid #3c5e4d;
 }
 
 .classic-label {

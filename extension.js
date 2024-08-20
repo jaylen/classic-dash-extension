@@ -22,17 +22,47 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dash = Me.imports.dash.Dash;
 
+const { Meta } = imports.gi;
+const Overview = imports.ui.overview.Overview;
+
+const Main = imports.ui.main;
+const PanelBox = Main.layoutManager.panelBox;
+
+function _inject(target, method, fun) {
+  let f = target[method];
+  if (f instanceof Function) {
+    target[method] = fun;
+    return f;
+  }
+  return null;
+}
+
 class ClassicDashExtension {
 
   constructor() {
     this.dash = null;
+    this._replaced = null; // for overview startup function
   }
 
   enable() {
+    // this will hide the overview at startup
+    this._replaced = _inject(Overview.prototype, 'runStartupAnimation', (callback) => {
+      // this will hide topbar as soon as it appears
+      let eid = PanelBox.connect('notify::allocation', () => {
+        PanelBox.y = -PanelBox.height;
+        PanelBox.disconnect(eid);
+      });
+      Meta.disable_unredirect_for_display(global.display);
+      callback();
+    });
     this.dash = new Dash();
   }
 
   disable() {
+    if (this._replaced !== null) {
+      _inject(Overview.prototype, 'runStartupAnimation', this._replaced);
+      this._replaced = null;
+    }
     if (this.dash !== null) {
       this.dash.destroy();
       this.dash = null;

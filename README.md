@@ -10,7 +10,8 @@ This extension brings classic look-and-feel for the dash panel that gives access
 
 It also hides the top bar to allow more space on your screen.
 
-To install, run
+To install, run the following command that will install the extension into the
+`${HOME}/.local/share/gnome-shell/extensions` directory.
 
 ```
 make install
