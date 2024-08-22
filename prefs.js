@@ -18,13 +18,15 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const {Adw, Gio, GObject, Gtk} = imports.gi;
+imports.gi.versions.Gtk = "4.0";
+
+const { Adw, GObject, Gtk, Gio, GLib } = imports.gi;
+
 const ExtensionUtils = imports.misc.extensionUtils;
 
-function init() {
-}
+function init() {}
 
-class ClassicDashSettingsWidget extends Adw.PreferencesPage {
+class SettingsWidget extends Adw.PreferencesPage {
 
   static {
     GObject.registerClass(this);
@@ -34,44 +36,91 @@ class ClassicDashSettingsWidget extends Adw.PreferencesPage {
 
     super();
 
+    let main = new Adw.PreferencesGroup({
+      title: 'Classic Dash Settings',
+    });
+    this.add(main);
+
+    this._settings = ExtensionUtils.getSettings();
     this._actions = new Gio.SimpleActionGroup();
     this.insert_action_group('classic-dash', this._actions);
-    this._settings = ExtensionUtils.getSettings();
-    this._actions.add_action(this._settings.create_action('show-app-menu'));
-    this._actions.add_action(this._settings.create_action('show-favourites'));
-    this._actions.add_action(this._settings.create_action('show-calendar'));
-    this._actions.add_action(this._settings.create_action('show-date'));
-    this._actions.add_action(this._settings.create_action('show-topbar-in-overview'));
-    this._actions.add_action(this._settings.create_action('show-sys-menu'));
 
-    let main_group = new Adw.PreferencesGroup({
-      title: 'Main Settings',
-    });
-    this.add(main_group);
-    main_group.add(this._toggle('show-app-menu', 'Show applications menu'));
-    main_group.add(this._toggle('show-favourites', 'Show favourites'));
-    main_group.add(this._toggle('show-calendar', 'Show clock and calendar'));
-    main_group.add(this._toggle('show-date', 'Show date on calendar panel'));
-    main_group.add(this._toggle('show-topbar-in-overview', 'Show topbar in overview mode'));
-    main_group.add(this._toggle('show-sys-menu', 'Show menu with system actions'));
+    let schema = this._settings.settings_schema;
+    let grid = SettingsWidget._box(12);
+    main.add(grid);
+    if (schema instanceof Gio.SettingsSchema) {
+      schema.list_keys().forEach((name, n) => {
+        let key = schema.get_key(name);
+        let id = key.get_name();
+        let summary = key.get_summary();
+        let vtype = key.get_value_type();
+        if (vtype.equal(GLib.VariantType.new('b'))) {
+          this._actions.add_action(this._settings.create_action(id));
+          grid.attach(SettingsWidget._toggle_row(id, summary), 0, n, 2, 1);
+        } else if (vtype.equal(GLib.VariantType.new('s'))) {
+          let action = this._settings.create_action(id);
+          this._actions.add_action(action);
+          grid.attach(SettingsWidget._label(summary), 0, n, 1, 1);
+          let entry = SettingsWidget._entry(this._settings, action, id);
+          this._settings.connect(`changed::${id}`, () => {
+            entry.buffer.text = this._settings.get_string(id);
+          });
+          grid.attach(entry, 1, n, 1, 1);
+        } else {
+          grid.attach(SettingsWidget._label(`Unknown type of param '${name}'`), 0, n, 2, 1);
+        }
+      });
+    } else {
+      grid.attach(SettingsWidget._label('Error: Schema file not found'), 0, 0, 1, 1);
+    }
 
   }
 
-  _toggle(action, title) {
+  static _box(spacing) {
+    return new Gtk.Grid({
+      column_spacing: spacing,
+      row_spacing: spacing,
+    });
+  }
+
+  static _label(text) {
+    return new Gtk.Label({
+      label: text,
+      halign: Gtk.Align.START,
+      valign: Gtk.Align.CENTER,
+    });
+  }
+
+  static _toggle_row(id, summary) {
+    let row = SettingsWidget._box(12);
+    let label = SettingsWidget._label(summary);
+    label.hexpand = true;
     let toggle = new Gtk.Switch({
-        action_name: `classic-dash.${action}`,
-        valign: Gtk.Align.CENTER,
-      });
-      let row = new Adw.ActionRow({
-        title: title,
-        activatable_widget: toggle,
-      });
-      row.add_suffix(toggle);
-      return row;
+      action_name: `classic-dash.${id}`,
+      valign: Gtk.Align.CENTER,
+    });
+    row.attach(label, 0, 0, 1, 1);
+    row.attach(toggle, 1, 0, 1, 1);
+    return row;
+  }
+
+  static _entry(settings, action, id) {
+    let entry = new Gtk.Entry({
+      valign: Gtk.Align.CENTER,
+      hexpand: true,
+      secondary_icon_name: 'document-send',
+    });
+    entry.buffer.text = settings.get_string(id);
+    let fun = () => {
+      action.change_state(GLib.Variant.new_string(entry.buffer.text));
+    };
+    entry.connect('activate', fun);
+    entry.connect('icon-release', fun);
+    return entry;
   }
 
 }
 
 function buildPrefsWidget() {
-  return new ClassicDashSettingsWidget();
+  return new SettingsWidget();
 }

@@ -142,6 +142,13 @@ var Button = class extends St.Button {
     }
   }
 
+  delete_label_text() {
+    if (this._label !== null) {
+      this._box.remove_child(this._label);
+      this._label = null;
+    }
+  }
+
   set_label_text_bold() {
     this._label?.set_bold();
   }
@@ -160,6 +167,13 @@ var Button = class extends St.Button {
       this._box.insert_child_at_index(this._icon, 0); // insert at the start
     } else {
       this._icon.child.icon_name = name;
+    }
+  }
+
+  delete_icon() {
+    if (this._icon !== null) {
+      this._box.remove_child(this._icon);
+      this._icon = null;
     }
   }
 

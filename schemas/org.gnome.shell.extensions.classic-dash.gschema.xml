@@ -43,5 +43,12 @@
         Show menu with system actions
       </description>
     </key>
+    <key name="applications-button-text" type="s">
+      <default>"Applications"</default>
+      <summary>Title for the Applications button</summary>
+      <description>
+        Title for the Applications button (use "icon:" prefix to replace text with an icon)
+      </description>
+    </key>
   </schema>
 </schemalist>

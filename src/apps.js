@@ -270,8 +270,16 @@ var AppButton = class extends Buttons.PushButton {
   constructor() {
     super();
     this.add_style_class_name('strong');
-    this.set_label_text('Applications');
-    this.set_label_text_bold();
+
+    this._settings = ExtensionUtils.getSettings();
+
+    this._settings.connectObject(
+      'changed::applications-button-text', () => {
+        this._set_label_text_or_icon(this._settings.get_string('applications-button-text'));
+      },
+      this);
+
+    this._set_label_text_or_icon(this._settings.get_string('applications-button-text'));
     this.set_menu(
       this._create_menu.bind(this),
       this._hide_menu.bind(this),
@@ -298,6 +306,19 @@ var AppButton = class extends Buttons.PushButton {
   _destroy_menu() {
     this._app_menu?.destroy();
     this._app_menu = null;
+  }
+
+  _set_label_text_or_icon(value) {
+    const prefix = 'icon:';
+    if (value.startsWith(prefix)) {
+      let name = value.substring(prefix.length);
+      this.set_icon_name(name);
+      this.delete_label_text();
+    } else {
+      this.set_label_text(value);
+      this.set_label_text_bold();
+      this.delete_icon();
+    }
   }
 
 }

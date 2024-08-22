@@ -327,6 +327,8 @@ var SysButtonMenu = class extends PopupMenu {
     this.add_menu_item('Logout...', this._system_logout.bind(this));
     this.add_separator_menu_item();
     this.add_menu_item('System Settings', this._system_settings.bind(this));
+    this.add_menu_item('Dash Settings', this._dash_settings.bind(this));
+    this.add_separator_menu_item();
     this.add_menu_item('Show Overview', this._show_overview.bind(this));
     this.add_menu_item('Minimise All Windows', this._minimise_all_windows.bind(this));
   }
@@ -343,6 +345,10 @@ var SysButtonMenu = class extends PopupMenu {
 
   _show_overview() {
     Main.overview.show();
+  }
+
+  _dash_settings() {
+    ExtensionUtils.openPrefs();
   }
 
   _system_settings() {
