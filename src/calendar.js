@@ -101,15 +101,15 @@ class Pager extends St.BoxLayout {
 
     this._prev_button.connectObject('clicked', () => {
       this._cal._selected_date = this._cal._selected_date.add_months(-1);
-      this._cal._update(true);
+      this._cal._update_for_date(this._cal._selected_date);
     });
     this._today_button.connectObject('clicked', () => {
-      this._cal._selected_date = null;
-      this._cal._update(true);
+      this._cal._selected_date = GLib.DateTime.new_now_local();
+      this._cal._update_for_date(this._cal._selected_date);
     });
     this._next_button.connectObject('clicked', () => {
       this._cal._selected_date = this._cal._selected_date.add_months(1);
-      this._cal._update(true);
+      this._cal._update_for_date(this._cal._selected_date);
     });
 
   }
@@ -169,30 +169,18 @@ class Calendar extends St.BoxLayout {
     this._grid = new DateGrid(this);
     this.add_child(this._grid);
 
-    this._selected_date = null;
-    this._current_date = null;
+    this._selected_date = GLib.DateTime.new_now_local();
+    this._current_date = GLib.DateTime.new_now_local();
 
-    this._update(true);
+    this._update_for_date(this._selected_date);
 
   }
 
-  _update(force) {
-    let now = GLib.DateTime.new_now_local();
-    if (!force && Calendar._equal_dates(now, this._current_date)) {
-      // don't update if the date is the same
-      // or hasn't been set
-      return;
-    }
-    this._current_date = now;
-    if (this._selected_date === null) {
-      this._selected_date = now;
-    } else {
-      now = this._selected_date;
-    }
-    this._pager._today_button.set_label_text(now.format('%B %Y'));
-    let first_day_of_month = GLib.DateTime.new_local(now.get_year(), now.get_month(), 1, 11, 59, 59);
-    let current_week = now.get_week_of_year();
-    let current_day_of_week = now.get_day_of_week();
+  _update_for_date(selected) {
+    this._pager._today_button.set_label_text(selected.format('%B %Y'));
+    let first_day_of_month = GLib.DateTime.new_local(selected.get_year(), selected.get_month(), 1, 11, 59, 59);
+    let current_week = selected.get_week_of_year();
+    let current_day_of_week = selected.get_day_of_week();
     let start_date = first_day_of_month.add_days(1 - first_day_of_month.get_day_of_week());
     if (Calendar._equal_dates(start_date, first_day_of_month)) {
       start_date = start_date.add_days(-7);
@@ -209,11 +197,24 @@ class Calendar extends St.BoxLayout {
         let cell = this._cells[x][y];
         let date = start_date.add_days(x + 7 * y);
         cell.set_label_text(`${date.get_day_of_month()}`);
-        cell.style_class_name(Calendar._equal_dates(date, now), 'framed');
-        cell._label.style_class_name(now.get_month() !== date.get_month(), 'bg');
+        cell.style_class_name(Calendar._equal_dates(date, selected), 'framed');
+        cell._label.style_class_name(selected.get_month() !== date.get_month(), 'bg');
         cell.style_class_name([6, 7].indexOf(date.get_day_of_week()) >= 0, 'special');
       });
     });
+  }
+
+  _update() {
+    let now = GLib.DateTime.new_now_local();
+    if (Calendar._equal_dates(now, this._current_date)) {
+      // don't update if the date is the same
+      // or hasn't been set
+      return;
+    } else {
+      this._current_date = now;
+    }
+    this._selected_date = this._current_date;
+    this._update_for_date(this._selected_date);
   }
 
   static _equal_dates(lhs, rhs) {
@@ -237,7 +238,7 @@ var CalendarMenu = class extends Menu.PopupMenu {
     this._calendar = new Calendar(this);
     this.add_custom_item(this._calendar);
     this.connectObject('show', () => {
-      this._calendar._update(false);
+      this._calendar._update();
     }, this);
     Main.overview.connectObject(
       'showing', this._overview_showing.bind(this),
@@ -245,7 +246,9 @@ var CalendarMenu = class extends Menu.PopupMenu {
   }
 
   _update() {
-    this._calendar._update(false);
+    if (this._calendar.visible) {
+      this._calendar._update();
+    }
   }
 
   _overview_showing() {
