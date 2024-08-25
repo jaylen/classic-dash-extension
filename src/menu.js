@@ -135,6 +135,10 @@ var PopupMenu = class extends Anchored {
         this);
     }
 
+    global.display.connectObject(
+      'in-fullscreen-changed', this.close_menu.bind(this),
+      this);
+
     this._grab = null; // for modal popup
 
     // add to stage
@@ -323,7 +327,6 @@ var SysButtonMenu = class extends PopupMenu {
     super(anchor);
     this.add_menu_item('Power Off...', this._system_power_off.bind(this));
     this.add_menu_item('Restart...', this._system_restart.bind(this));
-    this.add_separator_menu_item();
     this.add_menu_item('Logout...', this._system_logout.bind(this));
     this.add_separator_menu_item();
     this.add_menu_item('System Settings', this._system_settings.bind(this));

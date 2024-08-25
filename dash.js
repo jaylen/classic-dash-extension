@@ -26,8 +26,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Panels = Me.imports.src.panels;
 const Apps = Me.imports.src.apps;
 const Elements = Me.imports.src.elements;
-
-const PanelBox = Main.layoutManager.panelBox;
+const TopBar = Me.imports.src.topbar;
 
 var Dash = class extends Elements.BoxPanel {
 
@@ -83,12 +82,11 @@ var Dash = class extends Elements.BoxPanel {
   }
 
   _destroy() {
-    this._show_topbar();
     Main.layoutManager.removeChrome(this);
   }
 
   _position() {
-    this._hide_topbar();
+    TopBar.hide();
     let monitor = Main.layoutManager.primaryMonitor;
     this.width = monitor.width;
     this.set_position(monitor.x, monitor.y + monitor.height - this.height);
@@ -98,47 +96,27 @@ var Dash = class extends Elements.BoxPanel {
     let monitor = Main.layoutManager.primaryMonitor;
     this.ease({
       y: monitor.height,
-      duration: 200,
+      duration: 100,
       mode: Clutter.AnimationMode.EASE_OUT_QUAD
     });
-    let stbio = this._settings.get_boolean('show-topbar-in-overview');
-    if (stbio) {
-      this._show_topbar();
+    if (this._settings.get_boolean('show-topbar-in-overview')) {
+      TopBar.show();
     }
   }
 
   _overview_hiding() {
-    this._hide_topbar();
+    TopBar.hide();
     let monitor = Main.layoutManager.primaryMonitor;
     this.ease({
       y: monitor.height - this.height,
-      duration: 200,
+      duration: 100,
       mode: Clutter.AnimationMode.EASE_OUT_QUAD
     });
   }
 
   _session_mode(session) {
     if (session === 'user') {
-      this._hide_topbar();
-    }
-  }
-
-  _show_topbar() {
-    this._move_top_bar(0);
-  }
-
-  _hide_topbar() {
-    this._move_top_bar(-PanelBox.height);
-  }
-
-  _move_top_bar(top) {
-    if (PanelBox.has_allocation()) {
-      PanelBox.y = top;
-    } else {
-      let slot = PanelBox.connect('notify::allocation', () => {
-        PanelBox.y = top;
-        PanelBox.disconnect(slot);
-      });
+      TopBar.hide();
     }
   }
 
