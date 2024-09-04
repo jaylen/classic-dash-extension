@@ -110,6 +110,7 @@
   border-radius: 0.4em;
   background-color: #373737;
   padding: 0.5em;
+  border: 0.1em solid rgba(198, 198, 198, 0.1);
 }
 
 .classic-menu-item-separator {
