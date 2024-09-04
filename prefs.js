@@ -48,16 +48,29 @@ class SettingsWidget extends Adw.PreferencesPage {
     let schema = this._settings.settings_schema;
     let grid = SettingsWidget._box(12);
     main.add(grid);
+
+    const BOOL = GLib.VariantType.new('b');
+    const STRING = GLib.VariantType.new('s');
+
     if (schema instanceof Gio.SettingsSchema) {
-      schema.list_keys().forEach((name, n) => {
-        let key = schema.get_key(name);
+      let names = schema.list_keys();
+      names.sort();
+      let keys = names.map((name) => schema.get_key(name));
+      keys.sort((a, b) => {
+        let ta = a.get_value_type();
+        let tb = b.get_value_type();
+        let pa = ta.equal(BOOL) ? 0 : ta.equal(STRING) ? 1 : 2;
+        let pb = tb.equal(BOOL) ? 0 : tb.equal(STRING) ? 1 : 2;
+        return pa - pb;
+      });
+      keys.forEach((key, n) => {
         let id = key.get_name();
         let summary = key.get_summary();
         let vtype = key.get_value_type();
-        if (vtype.equal(GLib.VariantType.new('b'))) {
+        if (vtype.equal(BOOL)) {
           this._actions.add_action(this._settings.create_action(id));
           grid.attach(SettingsWidget._toggle_row(id, summary), 0, n, 2, 1);
-        } else if (vtype.equal(GLib.VariantType.new('s'))) {
+        } else if (vtype.equal(STRING)) {
           let action = this._settings.create_action(id);
           this._actions.add_action(action);
           grid.attach(SettingsWidget._label(summary), 0, n, 1, 1);
@@ -67,7 +80,7 @@ class SettingsWidget extends Adw.PreferencesPage {
           });
           grid.attach(entry, 1, n, 1, 1);
         } else {
-          grid.attach(SettingsWidget._label(`Unknown type of param '${name}'`), 0, n, 2, 1);
+          grid.attach(SettingsWidget._label(`Unknown type of param '${id}'`), 0, n, 2, 1);
         }
       });
     } else {
