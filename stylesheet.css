@@ -72,7 +72,11 @@
 }
 
 .classic-button.special {
-  border: 0.1em solid #9f9f9f;
+  background-color: #434343;
+}
+
+.classic-button.special:hover {
+  background-color: #4a4a4a;
 }
 
 .classic-label {

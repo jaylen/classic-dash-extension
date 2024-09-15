@@ -102,6 +102,7 @@ class WinButton extends Buttons.PushButton {
     super();
     this.add_style_class_name('width-12');
     this._window = window;
+    this._settings = ExtensionUtils.getSettings();
     let app = Shell.WindowTracker.get_default().get_window_app(this._window);
     if (app) {
       this.set_icon(app.create_icon_texture(Elements.Icon.ICON_SIZE));
@@ -111,6 +112,7 @@ class WinButton extends Buttons.PushButton {
     this.set_tooltip_text(title);
     this._window.connectObject(
       'unmanaging', this._set_unmanageable.bind(this),
+      'workspace-changed', this._workspace_changed.bind(this),
       'notify::title', this._update_title.bind(this),
       'notify::minimized', this._update_style.bind(this),
       this);
@@ -126,6 +128,7 @@ class WinButton extends Buttons.PushButton {
       this._destroy_menu.bind(this),
       [3]);
     this._update_style();
+    this._workspace_changed();
   }
 
   get window_title() {
@@ -144,6 +147,22 @@ class WinButton extends Buttons.PushButton {
     return this._window.has_focus();
   }
 
+  get_workspace_index() {
+    return this._window.get_workspace().index();
+  }
+
+  update_workspace(workspace) {
+    let filter = this._settings.get_boolean('win-filter-workspace');
+    let here = this._window.located_on_workspace(workspace);
+    if (here || !filter) {
+      this._label?.show();
+      this.add_style_class_name('width-12');
+    } else {
+      this._label?.hide();
+      this.remove_style_class_name('width-12');
+    }
+  }
+
   _clicked(actor, event) {
     let button = event.get_button();
     if (button === 1) { // left click
@@ -157,6 +176,11 @@ class WinButton extends Buttons.PushButton {
 
   _set_unmanageable() {
    this.destroy();
+  }
+
+  _workspace_changed() {
+    let workspace = global.workspace_manager.get_active_workspace();
+    this.update_workspace(workspace);
   }
 
   _update_title() {
@@ -204,19 +228,43 @@ var WinPanel = class extends Elements.BoxPanel {
       'window-demands-attention', this._attention.bind(this),
       'window-marked-urgent', this._attention.bind(this),
       this);
+    global.window_manager.connectObject(
+      'switch-workspace', this._switch_workspace.bind(this),
+      this
+    );
+    this._settings = ExtensionUtils.getSettings();
+    this._settings.connectObject(
+      'changed::win-filter-workspace', this._switch_workspace.bind(this),
+      'changed::win-group-by-workspace', this._update_grouping.bind(this),
+      this);
     this._update();
   }
 
   _update() {
     let windows = global.get_window_actors().sort((w1, w2) => {
-      return w1.metaWindow.get_stable_sequence() - w2.metaWindow.get_stable_sequence();
+      let m1 = w1.metaWindow;
+      let m2 = w2.metaWindow;
+      return m1.get_stable_sequence() - m2.get_stable_sequence();
     });
     for (let i = 0; i < windows.length; i++) {
-      this._add_window(global.display, windows[i].metaWindow);
+      this._add_window(null, windows[i].metaWindow);
     }
   }
 
-  _add_window(display, window) {
+  _switch_workspace() {
+    let children = this.get_children();
+    let workspace = global.workspace_manager.get_active_workspace();
+    children.forEach((button) => {
+      button.update_workspace(workspace);
+    });
+  }
+
+  _update_grouping() {
+    this.destroy_all_children();
+    this._update();
+  }
+
+  _add_window(unused, window) {
     if (window.skip_taskbar) {
       return;
     }
@@ -224,7 +272,19 @@ var WinPanel = class extends Elements.BoxPanel {
     if (children.find(child => child._window === window)) {
       return;
     }
-    this.add_child(new WinButton(window));
+    // group window buttons by workspace
+    if (this._settings.get_boolean('win-group-by-workspace')) {
+      let w = window.get_workspace().index();
+      let group = children.filter((button) => button.get_workspace_index() === w);
+      if (group.length === 0) {
+        this.add_child(new WinButton(window));
+      } else {
+        let last = group.at(-1);
+        this.insert_child_above(new WinButton(window), last);
+      }
+    } else {
+      this.add_child(new WinButton(window));
+    }
   }
 
   _attention(display, window) {
