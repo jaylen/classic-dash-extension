@@ -151,6 +151,15 @@ class WinButton extends Buttons.PushButton {
     return this._window.get_workspace().index();
   }
 
+  get_app_id() {
+    let app = Shell.WindowTracker.get_default().get_window_app(this._window);
+    if (app) {
+      return app.get_id();
+    } else {
+      return '';
+    }
+  }
+
   update_workspace(workspace) {
     let filter = this._settings.get_boolean('win-filter-workspace');
     let here = this._window.located_on_workspace(workspace);
@@ -236,6 +245,7 @@ var WinPanel = class extends Elements.BoxPanel {
     this._settings.connectObject(
       'changed::win-filter-workspace', this._switch_workspace.bind(this),
       'changed::win-group-by-workspace', this._update_grouping.bind(this),
+      'changed::win-group-by-app', this._update_grouping.bind(this),
       this);
     this._update();
   }
@@ -272,18 +282,27 @@ var WinPanel = class extends Elements.BoxPanel {
     if (children.find(child => child._window === window)) {
       return;
     }
+    let group;
     // group window buttons by workspace
     if (this._settings.get_boolean('win-group-by-workspace')) {
       let w = window.get_workspace().index();
-      let group = children.filter((button) => button.get_workspace_index() === w);
+      group = children.filter((button) => button.get_workspace_index() === w);
       if (group.length === 0) {
-        this.add_child(new WinButton(window));
-      } else {
-        let last = group.at(-1);
-        this.insert_child_above(new WinButton(window), last);
+        group = children;
       }
     } else {
+      group = children;
+    }
+    // group window buttons by application (in addition to any prev grouping)
+    if (this._settings.get_boolean('win-group-by-app')) {
+      let a = Shell.WindowTracker.get_default().get_window_app(window);
+      group = group.filter((button) => button.get_app_id() === a.get_id());
+    }
+    if (group.length === 0) {
       this.add_child(new WinButton(window));
+    } else {
+      let last = group.at(-1);
+      this.insert_child_above(new WinButton(window), last);
     }
   }
 

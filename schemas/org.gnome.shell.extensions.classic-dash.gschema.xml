@@ -57,6 +57,13 @@
         Place buttons for windows on the same workspace next to each other
       </description>
     </key>
+    <key name="win-group-by-app" type="b">
+      <default>true</default>
+      <summary>Group window buttons by application</summary>
+      <description>
+        Place buttons for windows of the same application next to each other
+      </description>
+    </key>
     <key name="applications-button-text" type="s">
       <default>"Applications"</default>
       <summary>Title for the Applications button</summary>
