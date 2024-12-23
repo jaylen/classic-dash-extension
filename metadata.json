@@ -1,5 +1,5 @@
 {
-  "name": "Classic Dash",
+  "name": "Classic Dash Extension",
   "description": "Classic Dash shell extension for GNOME",
   "uuid": "classic-dash@gnome.dev.jaylen.org",
   "shell-version": ["43"],

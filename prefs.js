@@ -23,6 +23,8 @@ imports.gi.versions.Gtk = "4.0";
 const { Adw, GObject, Gtk, Gio, GLib } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const Version = Me.imports.version.Version;
 
 function init() {}
 
@@ -37,7 +39,7 @@ class SettingsWidget extends Adw.PreferencesPage {
     super();
 
     let main = new Adw.PreferencesGroup({
-      title: 'Classic Dash Settings',
+      title: `Classic Dash Extension Settings ${Version.current}`,
     });
     this.add(main);
 
