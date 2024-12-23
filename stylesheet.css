@@ -17,7 +17,7 @@
 
 .classic-button {
   margin: 0.2em;
-  padding: 0.1em 0.2em;
+  padding: 0.1em;
   border-radius: 0.2em;
 }
 
@@ -41,6 +41,16 @@
 .classic-button.width-20 {
   max-width: 20.0em;
   -st-natural-width: 20.0em;
+}
+
+.classic-button.naked {
+  padding: 0;
+  margin: 0;
+  border-radius: 0.1em;
+}
+
+.classic-button.subtle {
+  color: #3e3e3e;
 }
 
 .classic-button.height-2 {

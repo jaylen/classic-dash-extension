@@ -48,11 +48,13 @@ class CatMenuItem extends Menu.MenuItem {
 
 }
 
-class AppMenuItem extends Menu.ImageMenuItem {
+class AppMenuItem extends Menu.ActionMenuItem {
 
   static {
     GObject.registerClass(this);
   }
+
+  static _fav = AppFavorites.getAppFavorites();
 
   constructor(app) {
     let icon = app.create_icon_texture(24);
@@ -61,6 +63,16 @@ class AppMenuItem extends Menu.ImageMenuItem {
     this.add_style_class_name('width-20');
     this._app = app;
     this.connectObject('clicked', this._launch.bind(this), this);
+    let fav = AppMenuItem._fav.isFavorite(app.get_id());
+    const add_fav = () => {
+      AppMenuItem._fav.addFavorite(app.get_id());
+    };
+    const rem_fav = () => {
+      AppMenuItem._fav.removeFavorite(app.get_id());
+    };
+    this.set_action_button(
+      fav ? 'zoom-out-symbolic' : 'zoom-in-symbolic',
+      fav ? rem_fav : add_fav);
   }
 
   _launch() {
@@ -131,7 +143,7 @@ class ApplicationsMenu extends St.BoxLayout {
       let pane = ApplicationsMenu._make_pane('classic-app-menu-pane', cat === 'Favourites');
       let item = new CatMenuItem(cat, pane);
       for (let app of apps) {
-        let app_item = new AppMenuItem(app)
+        let app_item = new AppMenuItem(app);
         app_item.connectObject('clicked', this._close_menu.bind(this), app_item);
         pane.add_child(app_item);
       }

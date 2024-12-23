@@ -94,6 +94,27 @@ var ImageMenuItem = class extends MenuItem {
 
 }
 
+var ActionMenuItem = class extends ImageMenuItem {
+
+  static {
+    GObject.registerClass(this);
+  }
+
+  constructor(text, icon) {
+    super(text, icon);
+  }
+
+  set_action_button(icon, fun) {
+    let button = new Elements.Button();
+    button.add_style_class_name('naked');
+    button.add_style_class_name('subtle');
+    button.set_icon_name(icon);
+    this._box.insert_child_at_index(button, -1); // insert at the end
+    button.connectObject('clicked', fun, this);
+  }
+
+}
+
 var PopupMenu = class extends Anchored {
 
   static {
