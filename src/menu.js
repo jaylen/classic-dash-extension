@@ -303,11 +303,25 @@ var SysButtonMenu = class extends PopupMenu {
     GObject.registerClass(this);
   }
 
+  static _sys = SystemActions.getDefault();
+
   constructor(anchor) {
     super(anchor);
-    this.add_menu_item('Power Off...', this._system_power_off.bind(this));
-    this.add_menu_item('Restart...', this._system_restart.bind(this));
-    this.add_menu_item('Logout...', this._system_logout.bind(this));
+    if (SysButtonMenu._sys.canPowerOff) {
+      this.add_menu_item('Power Off...', this._system_power_off.bind(this));
+    }
+    if (SysButtonMenu._sys.canRestart) {
+      this.add_menu_item('Restart...', this._system_restart.bind(this));
+    }
+    if (SysButtonMenu._sys.canPowerOff) {
+      this.add_menu_item('Logout...', this._system_logout.bind(this));
+    }
+    if (SysButtonMenu._sys.canLockScreen) {
+      this.add_menu_item('Lock screen...', this._system_lock_screen.bind(this));
+    }
+    if (SysButtonMenu._sys.canSuspend) {
+      this.add_menu_item('Suspend...', this._system_suspend.bind(this));
+    }
     this.add_separator_menu_item();
     this.add_menu_item('System Settings', this._system_settings.bind(this));
     this.add_menu_item('Dash Settings', this._dash_settings.bind(this));
@@ -339,19 +353,29 @@ var SysButtonMenu = class extends PopupMenu {
     settings_app?.activate();
   }
 
+  _system_lock_screen() {
+    Main.overview.hide();
+    SysButtonMenu._sys.activateLockScreen();
+  }
+
+  _system_suspend() {
+    Main.overview.hide();
+    SysButtonMenu._sys.activateSuspend();
+  }
+
   _system_logout() {
     Main.overview.hide();
-    SystemActions.getDefault().activateLogout();
+    SysButtonMenu._sys.activateLogout();
   }
 
   _system_restart() {
     Main.overview.hide();
-    SystemActions.getDefault().activateRestart();
+    SysButtonMenu._sys.activateRestart();
   }
 
   _system_power_off() {
     Main.overview.hide();
-    SystemActions.getDefault().activatePowerOff();
+    SysButtonMenu._sys.activatePowerOff();
   }
 
 }
