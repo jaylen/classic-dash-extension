@@ -19,5 +19,5 @@
  */
 
 var Version = class {
-  static current = '0.1.0';
+  static current = '0.2.0';
 }
