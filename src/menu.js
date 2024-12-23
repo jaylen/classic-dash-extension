@@ -256,20 +256,10 @@ var WinButtonMenu = class extends PopupMenu {
     GObject.registerClass(this);
   }
 
-  static _favs = AppFavorites.getAppFavorites();
-
   constructor(anchor, window) {
 
     super(anchor);
     this._window = window;
-
-    let app = Shell.WindowTracker.get_default().get_window_app(this._window);
-    if (app) {
-      if (!WinButtonMenu._favs.isFavorite(app.get_id())) {
-        this.add_menu_item('Add to Favourites', this._add_to_favs.bind(this));
-        this.add_separator_menu_item();
-      }
-    }
 
     let maximized = this._window.get_maximized() === Meta.MaximizeFlags.BOTH;
     let max_text = maximized ? 'Unmaximise' : 'Maximise';
@@ -324,16 +314,6 @@ var WinButtonMenu = class extends PopupMenu {
       return;
     }
     this._window.delete(global.get_current_time());
-  }
-
-  _add_to_favs() {
-    if (this._window === null) {
-      return;
-    }
-    let app = Shell.WindowTracker.get_default().get_window_app(this._window);
-    if (app) {
-      WinButtonMenu._favs.addFavorite(app.get_id());
-    }
   }
 
 }
