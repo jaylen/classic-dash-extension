@@ -22,13 +22,6 @@
         Show panel date, time, and weekday
       </description>
     </key>
-    <key name="show-date" type="b">
-      <default>true</default>
-      <summary>Show date on the calendar panel</summary>
-      <description>
-        Show date on the calendar panel
-      </description>
-    </key>
     <key name="show-topbar-in-overview" type="b">
       <default>false</default>
       <summary>Show topbar in overview mode</summary>

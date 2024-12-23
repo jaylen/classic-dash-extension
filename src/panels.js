@@ -318,12 +318,9 @@ class CalButton extends Buttons.PushButton {
     this.set_label_text('00:00');
     this.set_label_text_bold();
     this._settings = ExtensionUtils.getSettings();
-    this._clock = new GnomeDesktop.WallClock({
-      time_only: !this._settings.get_boolean('show-date')
-    });
+    this._clock = new GnomeDesktop.WallClock();
     this._clock.bind_property('clock', this._label, 'text', GObject.BindingFlags.SYNC_CREATE);
     this._label.connect('notify::text', this._update_tooltip.bind(this));
-    this._settings.connectObject('changed::show-date', this._update_show_date.bind(this), this);
     this._update_tooltip();
     this.set_menu(
       this._create_menu.bind(this),
@@ -340,10 +337,6 @@ class CalButton extends Buttons.PushButton {
     let date = GLib.DateTime.new_now_local();
     let text = date.format('%A %d %B %Y %Z');
     this.set_tooltip_text(text);
-  }
-
-  _update_show_date() {
-    this._clock.time_only = !this._settings.get_boolean('show-date');
   }
 
   _create_menu() {
