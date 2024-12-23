@@ -19,14 +19,13 @@
  */
 
 const {
-  Clutter, GObject, St, Meta, Shell
+  Clutter, GObject, St, Meta
 } = imports.gi;
 
 const AppSystem = imports.gi.Shell.AppSystem;
 const SystemActions = imports.misc.systemActions;
 
 const Main = imports.ui.main;
-const AppFavorites = imports.ui.appFavorites;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -226,26 +225,6 @@ var PopupMenu = class extends Anchored {
 
   close_menu() {
     this.hide();
-  }
-
-}
-
-var FavButtonMenu = class extends PopupMenu {
-
-  static {
-    GObject.registerClass(this);
-  }
-
-  static _favs = AppFavorites.getAppFavorites();
-
-  constructor(anchor, app) {
-    super(anchor);
-    this._app = app;
-    this.add_menu_item('Remove from Favourites', this._rem_from_favs.bind(this));
-  }
-
-  _rem_from_favs() {
-    FavButtonMenu._favs.removeFavorite(this._app.get_id());
   }
 
 }

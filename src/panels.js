@@ -44,10 +44,6 @@ class FavButton extends Buttons.PushButton {
     this.set_icon(this._app.create_icon_texture(Elements.Icon.ICON_SIZE));
     this.connectObject('clicked', this._launch.bind(this), this);
     this.set_tooltip_text(this._app.get_name());
-    this.set_menu(
-      this._create_menu.bind(this),
-      this._destroy_menu.bind(this),
-      [3]);
   }
 
   _launch() {
@@ -56,14 +52,6 @@ class FavButton extends Buttons.PushButton {
     } else {
       this._app.activate();
     }
-  }
-
-  _create_menu() {
-    return new Menu.FavButtonMenu(this, this._app);
-  }
-
-  _destroy_menu(menu) {
-    menu.destroy();
   }
 
 }
