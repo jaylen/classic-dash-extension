@@ -281,7 +281,7 @@ var AppButton = class extends Buttons.PushButton {
 
   constructor() {
     super();
-    this.add_style_class_name('strong');
+    this.add_style_class_name('sysbtn');
 
     this._settings = ExtensionUtils.getSettings();
 

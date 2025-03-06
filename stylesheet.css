@@ -22,15 +22,23 @@
 }
 
 .classic-button:hover {
-  background-color: #4c4c4c;
+  background-color: #4a4a4a;
 }
 
 .classic-button:active {
-  background-color: #5c5c5c;
+  background-color: #5a5a5a;
 }
 
-.classic-button.strong {
+.classic-button.sysbtn {
   background-color: #323232;
+}
+
+.classic-button.sysbtn:active {
+  background-color: #213e6a;
+}
+
+.classic-button.sysbtn:hover {
+  background-color: #213e6a;
 }
 
 .classic-button.width-12 {

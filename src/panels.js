@@ -371,7 +371,7 @@ class SystemButton extends Buttons.PushButton {
 
   constructor() {
     super();
-    this.add_style_class_name('strong');
+    this.add_style_class_name('sysbtn');
     this.set_icon_name('preferences-system');
     this.set_menu(
       this._create_menu.bind(this),
