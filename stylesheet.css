@@ -38,6 +38,11 @@
   -st-natural-width: 12.0em;
 }
 
+.classic-button.width-11 {
+  max-width: 10.5em;
+  -st-natural-width: 10.5em;
+}
+
 .classic-button.width-20 {
   max-width: 20.0em;
   -st-natural-width: 20.0em;

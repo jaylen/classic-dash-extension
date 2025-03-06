@@ -315,6 +315,7 @@ class CalButton extends Buttons.PushButton {
 
   constructor() {
     super();
+    this.add_style_class_name('width-11');
     this.set_label_text('00:00');
     this.set_label_text_bold();
     this._settings = ExtensionUtils.getSettings();
