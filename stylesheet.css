@@ -2,7 +2,7 @@
 .classic-dash-panel {
   padding: 0 0.1em;
   margin: 0;
-  background-color: #393a3f;
+  background-color: #323232;
   min-height: 2.0em;
 }
 
@@ -22,11 +22,11 @@
 }
 
 .classic-button:hover {
-  background-color: #494a50;
+  background-color: #4c4c4c;
 }
 
 .classic-button:active {
-  background-color: #55565e;
+  background-color: #5c5c5c;
 }
 
 .classic-button.strong {
@@ -63,19 +63,19 @@
 }
 
 .classic-button.bg {
-  background-color: #3d3e43;
+  background-color: #383838;
 }
 
 .classic-button.normal {
-  background-color: #303136;
+  background-color: #3c3c3c;
 }
 
 .classic-button.fg {
-  background-color: #27282a;
+  background-color: #2a2a2a;
 }
 
 .classic-button.selected {
-  background-color: #55565e;
+  background-color: #5c5c5c;
 }
 
 .classic-button.framed {
@@ -112,7 +112,7 @@
 }
 
 .classic-label.bg {
-  color: #959595;
+  color: #808080;
 }
 
 .classic-label.fg {
