@@ -34,6 +34,8 @@ class SettingsWidget extends Adw.PreferencesPage {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor() {
 
     super();
@@ -43,11 +45,10 @@ class SettingsWidget extends Adw.PreferencesPage {
     });
     this.add(main);
 
-    this._settings = ExtensionUtils.getSettings();
     this._actions = new Gio.SimpleActionGroup();
     this.insert_action_group('classic-dash', this._actions);
 
-    let schema = this._settings.settings_schema;
+    let schema = SettingsWidget._settings.settings_schema;
     let grid = SettingsWidget._box(12);
     main.add(grid);
 
@@ -70,15 +71,15 @@ class SettingsWidget extends Adw.PreferencesPage {
         let summary = key.get_summary();
         let vtype = key.get_value_type();
         if (vtype.equal(BOOL)) {
-          this._actions.add_action(this._settings.create_action(id));
+          this._actions.add_action(SettingsWidget._settings.create_action(id));
           grid.attach(SettingsWidget._toggle_row(id, summary), 0, n, 2, 1);
         } else if (vtype.equal(STRING)) {
-          let action = this._settings.create_action(id);
+          let action = SettingsWidget._settings.create_action(id);
           this._actions.add_action(action);
           grid.attach(SettingsWidget._label(summary), 0, n, 1, 1);
-          let entry = SettingsWidget._entry(this._settings, action, id);
-          this._settings.connect(`changed::${id}`, () => {
-            entry.buffer.text = this._settings.get_string(id);
+          let entry = SettingsWidget._entry(SettingsWidget._settings, action, id);
+          SettingsWidget._settings.connect(`changed::${id}`, () => {
+            entry.buffer.text = SettingsWidget._settings.get_string(id);
           });
           grid.attach(entry, 1, n, 1, 1);
         } else {

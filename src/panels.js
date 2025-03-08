@@ -115,11 +115,12 @@ class WinButton extends Buttons.PushButton {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor(window) {
     super();
     this.add_style_class_name('width-12');
     this._window = window;
-    this._settings = ExtensionUtils.getSettings();
     let app = Shell.WindowTracker.get_default().get_window_app(this._window);
     if (app) {
       this.set_icon(app.create_icon_texture(Elements.Icon.ICON_SIZE));
@@ -178,7 +179,7 @@ class WinButton extends Buttons.PushButton {
   }
 
   update_workspace(workspace) {
-    let filter = this._settings.get_boolean('win-filter-workspace');
+    let filter = WinButton._settings.get_boolean('win-filter-workspace');
     let here = this._window.located_on_workspace(workspace);
     if (here || !filter) {
       this._label?.show();
@@ -247,6 +248,8 @@ var WinPanel = class extends Elements.BoxPanel {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor() {
     super('classic-win-panel', true);
     global.display.connectObject(
@@ -258,8 +261,7 @@ var WinPanel = class extends Elements.BoxPanel {
       'switch-workspace', this._switch_workspace.bind(this),
       this
     );
-    this._settings = ExtensionUtils.getSettings();
-    this._settings.connectObject(
+    WinPanel._settings.connectObject(
       'changed::win-filter-workspace', this._switch_workspace.bind(this),
       'changed::win-group-by-workspace', this._update_grouping.bind(this),
       'changed::win-group-by-app', this._update_grouping.bind(this),
@@ -301,7 +303,7 @@ var WinPanel = class extends Elements.BoxPanel {
     }
     let group;
     // group window buttons by workspace
-    if (this._settings.get_boolean('win-group-by-workspace')) {
+    if (WinPanel._settings.get_boolean('win-group-by-workspace')) {
       let w = window.get_workspace().index();
       group = children.filter((button) => button.get_workspace_index() === w);
       if (group.length === 0) {
@@ -311,7 +313,7 @@ var WinPanel = class extends Elements.BoxPanel {
       group = children;
     }
     // group window buttons by application (in addition to any prev grouping)
-    if (this._settings.get_boolean('win-group-by-app')) {
+    if (WinPanel._settings.get_boolean('win-group-by-app')) {
       let a = Shell.WindowTracker.get_default().get_window_app(window);
       group = group.filter((button) => button.get_app_id() === a.get_id());
     }
@@ -347,7 +349,6 @@ class CalButton extends Buttons.PushButton {
     this.add_style_class_name('width-11');
     this.set_label_text('00:00');
     this.set_label_text_bold();
-    this._settings = ExtensionUtils.getSettings();
     this._clock = new GnomeDesktop.WallClock();
     this._clock.bind_property('clock', this._label, 'text', GObject.BindingFlags.SYNC_CREATE);
     this._label.connect('notify::text', this._update_tooltip.bind(this));
@@ -424,19 +425,20 @@ var SysTrayPanel = class extends Elements.BoxPanel {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor() {
     super('classic-cal-panel', false);
     this._cal_button = new CalButton();
     this.add_actor(this._cal_button);
     this._sys_button = new SystemButton();
     this.add_actor(this._sys_button);
-    this._settings = ExtensionUtils.getSettings();
-    this._settings.connectObject(
+    SysTrayPanel._settings.connectObject(
       'changed::show-calendar', () => {
-        this._cal_button.visible = this._settings.get_boolean('show-calendar')
+        this._cal_button.visible = SysTrayPanel._settings.get_boolean('show-calendar')
       },
       'changed::show-sys-menu', () => {
-        this._sys_button.visible = this._settings.get_boolean('show-sys-menu')
+        this._sys_button.visible = SysTrayPanel._settings.get_boolean('show-sys-menu')
       },
       this);
   }

@@ -279,19 +279,19 @@ var AppButton = class extends Buttons.PushButton {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor() {
     super();
     this.add_style_class_name('sysbtn');
 
-    this._settings = ExtensionUtils.getSettings();
-
-    this._settings.connectObject(
+    AppButton._settings.connectObject(
       'changed::applications-button-text', () => {
-        this._set_label_text_or_icon(this._settings.get_string('applications-button-text'));
+        this._set_label_text_or_icon(AppButton._settings.get_string('applications-button-text'));
       },
       this);
 
-    this._set_label_text_or_icon(this._settings.get_string('applications-button-text'));
+    this._set_label_text_or_icon(AppButton._settings.get_string('applications-button-text'));
     this.set_menu(
       this._create_menu.bind(this),
       this._hide_menu.bind(this),

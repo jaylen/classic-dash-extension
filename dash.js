@@ -34,6 +34,8 @@ var Dash = class extends Elements.BoxPanel {
     GObject.registerClass(this);
   }
 
+  static _settings = ExtensionUtils.getSettings();
+
   constructor() {
 
     super('classic-dash-panel', true, 'classic-dash-panel');
@@ -51,8 +53,6 @@ var Dash = class extends Elements.BoxPanel {
       this);
     Main.sessionMode.connectObject('updated', this._session_mode.bind(this), this);
 
-    this._settings = ExtensionUtils.getSettings();
-
     this._app_button = new Apps.AppButton();
     this.add_child(this._app_button);
 
@@ -65,12 +65,12 @@ var Dash = class extends Elements.BoxPanel {
     this._sys_panel = new Panels.SysTrayPanel();
     this.add_child(this._sys_panel);
 
-    this._settings.connectObject(
+    Dash._settings.connectObject(
       'changed::show-app-menu', () => {
-        this._app_button.visible = this._settings.get_boolean('show-app-menu')
+        this._app_button.visible = Dash._settings.get_boolean('show-app-menu')
       },
       'changed::show-favourites', () => {
-        this._fav_panel.visible = this._settings.get_boolean('show-favourites')
+        this._fav_panel.visible = Dash._settings.get_boolean('show-favourites')
       },
       this);
 
@@ -99,7 +99,7 @@ var Dash = class extends Elements.BoxPanel {
       duration: 100,
       mode: Clutter.AnimationMode.EASE_OUT_QUAD
     });
-    if (this._settings.get_boolean('show-topbar-in-overview')) {
+    if (Dash._settings.get_boolean('show-topbar-in-overview')) {
       TopBar.show();
     }
   }
