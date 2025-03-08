@@ -30,15 +30,15 @@
 }
 
 .classic-button.sysbtn {
-  background-color: #323232;
-}
-
-.classic-button.sysbtn:active {
-  background-color: #213e6a;
+  background-color: #282828;
 }
 
 .classic-button.sysbtn:hover {
-  background-color: #213e6a;
+  background-color: #303030;
+}
+
+.classic-button.sysbtn:active {
+  background-color: #313131;
 }
 
 .classic-button.width-12 {
