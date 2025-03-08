@@ -1,6 +1,6 @@
 /* Classic Dash: apps.js
  *
- * Copyright 2024 Yury Khrustalev
+ * Copyright 2024-2025 Yury Khrustalev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
