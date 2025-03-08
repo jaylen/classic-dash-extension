@@ -57,6 +57,13 @@
         Place buttons for windows of the same application next to each other
       </description>
     </key>
+    <key name="fav-hide-when-running" type="b">
+      <default>false</default>
+      <summary>Hide favourite app launcher when app is running</summary>
+      <description>
+        Hide favourite app launcher when app is running when corresponding app is running
+      </description>
+    </key>
     <key name="applications-button-text" type="s">
       <default>"Applications"</default>
       <summary>Title for the Applications button</summary>

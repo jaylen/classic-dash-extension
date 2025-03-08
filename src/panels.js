@@ -37,12 +37,18 @@ class FavButton extends Buttons.PushButton {
     GObject.registerClass(this);
   }
 
+  static _sys = Shell.AppSystem.get_default();
+  static _settings = ExtensionUtils.getSettings();
+
   constructor(app) {
     super();
     this.button_mask = St.ButtonMask.ONE;
     this._app = app;
     this.set_icon(this._app.create_icon_texture(Elements.Icon.ICON_SIZE));
     this.connectObject('clicked', this._launch.bind(this), this);
+    this._set_app_state_changed();
+    FavButton._settings.connectObject(
+      'changed::fav-hide-when-running', this._set_app_state_changed.bind(this), this);
     this.set_tooltip_text(this._app.get_name());
   }
 
@@ -51,6 +57,29 @@ class FavButton extends Buttons.PushButton {
       this._app.open_new_window(-1);
     } else {
       this._app.activate();
+    }
+  }
+
+  _set_app_state_changed() {
+    if (FavButton._settings.get_boolean('fav-hide-when-running')) {
+      FavButton._sys.connectObject('app-state-changed', this._app_state_changed.bind(this), this);
+      if (this._app.state === Shell.AppState.RUNNING) {
+        this.hide();
+      }
+    } else {
+      FavButton._sys.disconnectObject(this);
+      this.show();
+    }
+  }
+
+  _app_state_changed(sys, app) {
+    if (app.get_id() !== this._app.get_id()) {
+      return;
+    }
+    if (app.state === Shell.AppState.RUNNING) {
+      this.hide();
+    } else {
+      this.show();
     }
   }
 
