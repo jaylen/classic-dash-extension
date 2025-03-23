@@ -328,7 +328,7 @@ var AppButton = class extends Buttons.PushButton {
       this.delete_label_text();
     } else {
       this.set_label_text(value);
-      this.set_label_text_bold();
+      this.add_label_style_class_name('bold');
       this.delete_icon();
     }
   }

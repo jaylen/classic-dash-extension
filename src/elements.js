@@ -39,10 +39,6 @@ var Label = class extends St.Label {
     });
   }
 
-  set_bold() {
-    this.add_style_class_name('bold');
-  }
-
   style_class_name(active, styleclass) {
     if (active) {
       this.add_style_class_name(styleclass);
@@ -149,8 +145,8 @@ var Button = class extends St.Button {
     }
   }
 
-  set_label_text_bold() {
-    this._label?.set_bold();
+  add_label_style_class_name(styleclass) {
+    this._label?.style_class_name(true, styleclass);
   }
 
   set_icon(icon) {
