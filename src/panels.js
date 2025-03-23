@@ -348,7 +348,7 @@ class CalButton extends Buttons.PushButton {
     super();
     this.set_label_text('00:00');
     this.add_label_style_class_name('bold');
-    this._label.add_style_class_name('date-time-label');
+    this.add_label_style_class_name('mono');
     this._clock = new GnomeDesktop.WallClock();
     this._clock.bind_property('clock', this._label, 'text', GObject.BindingFlags.SYNC_CREATE);
     this._label.connect('notify::text', this._update_tooltip.bind(this));

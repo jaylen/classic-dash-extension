@@ -46,11 +46,6 @@
   -st-natural-width: 12.0em;
 }
 
-.date-time-label {
-  text-align: left;
-  font-family: monospace;
-}
-
 .classic-button.width-20 {
   max-width: 20.0em;
   -st-natural-width: 20.0em;
@@ -116,7 +111,7 @@
 }
 
 .classic-label.mono {
-  font-family: monospace;
+  font-family: "Fira Code Retina", monospace;
 }
 
 .classic-label.bg {
