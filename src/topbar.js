@@ -18,24 +18,88 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const Main = imports.ui.main;
-const PanelBox = Main.layoutManager.panelBox;
+'use strict';
 
-const move_top_bar = (top) => {
-  if (PanelBox.has_allocation()) {
-    PanelBox.y = top;
-  } else {
-    let eid = PanelBox.connect('notify::allocation', () => {
-      PanelBox.y = top;
-      PanelBox.disconnect(eid);
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import Clutter from 'gi://Clutter';
+
+import {
+  Extension
+} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+export class TopBar {
+
+  static #panel = Main.layoutManager.panelBox;
+  static #mm = global.backend.get_monitor_manager();
+  #eid = null;
+  #hid = null;
+  #mid = null;
+  #settings = null;
+
+  constructor() {
+    this.#settings = Extension.lookupByURL(import.meta.url)?.getSettings();
+    this.#eid = Main.overview.connect('shown', this.#showing.bind(this));
+    this.#hid = Main.overview.connect('hidden', this.#hiding.bind(this));
+    this.#mid = TopBar.#mm.connect('monitors-changed', this.#hiding.bind(this));
+    this.hide();
+  }
+
+  destroy() {
+    this.show();
+    if (this.#eid !== null) {
+      Main.overview.disconnect(this.#eid);
+      this.#eid = null;
+    }
+    if (this.#hid !== null) {
+      Main.overview.disconnect(this.#hid);
+      this.#hid = null;
+    }
+    if (this.#mid !== null) {
+      TopBar.#mm.disconnect(this.#mid);
+      this.#hid = null;
+    }
+    this.#settings = null;
+  }
+
+  hide() {
+    TopBar.#move(0 - TopBar.#panel.height);
+  }
+
+  show() {
+    TopBar.#move(0);
+  }
+
+  #showing() {
+    if (this.#settings?.get_boolean('show-topbar-in-overview')) {
+      this.show();
+    }
+  }
+
+  #hiding() {
+    this.hide();
+  }
+
+  static #ease(top) {
+    TopBar.#panel.ease({
+      y: top,
+      duration: 25,
+      mode: Clutter.AnimationMode.EASE_OUT_QUAD
     });
   }
-};
 
-var hide = () => {
-  move_top_bar(0 - PanelBox.height);
-};
+  static #move(top) {
+    if (TopBar.#panel.y === top) {
+      return;
+    }
+    if (TopBar.#panel.has_allocation()) {
+      TopBar.#ease(top);
+    } else {
+      let eid = TopBar.#panel.connect('notify::allocation', () => {
+        TopBar.#ease(top);
+        TopBar.#panel.disconnect(eid);
+      });
+    }
+  }
 
-var show = () => {
-  move_top_bar(0);
-};
+}

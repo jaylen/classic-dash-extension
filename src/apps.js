@@ -18,74 +18,84 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const {
-    GObject, St, GMenu, Shell
-} = imports.gi;
+'use strict';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Menu = Me.imports.src.menu;
-const Buttons = Me.imports.src.buttons;
+import St from 'gi://St';
+import GMenu from 'gi://GMenu';
+import Shell from 'gi://Shell';
+import GObject from 'gi://GObject';
 
-const AppFavorites = imports.ui.appFavorites;
-const Main = imports.ui.main;
+import {
+  MenuItem,
+  PopupMenu,
+  ActionMenuItem,
+} from './menu.js';
 
-class CatMenuItem extends Menu.MenuItem {
+import {
+  Icon,
+  Button,
+} from './elements.js';
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
+
+class CatMenuItem extends MenuItem {
 
   static {
     GObject.registerClass(this);
   }
 
+  #pane = null;
+
   constructor(cid, pane) {
     super(cid);
-    this._pane = pane;
-    this.connect('enter-event', this._show_category.bind(this));
+    this.#pane = pane;
+    this.connect('enter-event', this.#show_category.bind(this));
   }
 
-  _show_category() {
-    this._pane.show();
+  #show_category() {
+    this.#pane.show();
   }
 
 }
 
-class AppMenuItem extends Menu.ActionMenuItem {
+class AppMenuItem extends ActionMenuItem {
 
   static {
     GObject.registerClass(this);
   }
 
-  static _fav = AppFavorites.getAppFavorites();
+  static #fav = AppFavorites.getAppFavorites();
+  #app = null;
 
   constructor(app) {
-    let icon = app.create_icon_texture(24);
+    const icon = app.create_icon_texture(Icon.ICON_SIZE);
     super(app.get_name(), icon);
     this.remove_style_class_name('width-12');
     this.add_style_class_name('width-20');
-    this._app = app;
-    this.connectObject('clicked', this._launch.bind(this), this);
-    let fav = AppMenuItem._fav.isFavorite(app.get_id());
-    const add_fav = () => {
-      AppMenuItem._fav.addFavorite(app.get_id());
-    };
-    const rem_fav = () => {
-      AppMenuItem._fav.removeFavorite(app.get_id());
-    };
+    this.#app = app;
+    this.connectObject('clicked', this.#launch.bind(this), this);
+    const fav = AppMenuItem.#fav.isFavorite(app.get_id());
     this.set_action_button(
       fav ? 'zoom-out-symbolic' : 'zoom-in-symbolic',
-      fav ? rem_fav : add_fav);
+      fav ? () => {
+      AppMenuItem.#fav.removeFavorite(app.get_id());
+    } : () => {
+      AppMenuItem.#fav.addFavorite(app.get_id());
+    });
   }
 
-  _launch() {
-    if (this._app.state === Shell.AppState.RUNNING && this._app.can_open_new_window()) {
-      this._app.open_new_window(-1);
+  #launch() {
+    if (this.#app.state === Shell.AppState.RUNNING && this.#app.can_open_new_window()) {
+      this.#app.open_new_window(-1);
     } else {
-      this._app.activate();
+      this.#app.activate();
     }
   }
 
 }
 
-class DummyMenuItem extends Menu.MenuItem {
+class DummyMenuItem extends MenuItem {
 
   static {
     GObject.registerClass(this);
@@ -100,14 +110,17 @@ class DummyMenuItem extends Menu.MenuItem {
 
 }
 
-class ApplicationsMenu extends St.BoxLayout {
+class AppMenuWidget extends St.BoxLayout {
 
   static {
     GObject.registerClass(this);
   }
 
-  static _sys = Shell.AppSystem.get_default();
-  static _fav = AppFavorites.getAppFavorites();
+  static #sys = Shell.AppSystem.get_default();
+  static #fav = AppFavorites.getAppFavorites();
+  #parent = null;
+  #tree = null;
+  #panes = null;
 
   constructor(parent) {
 
@@ -118,46 +131,49 @@ class ApplicationsMenu extends St.BoxLayout {
       y_expand: false,
       vertical: false,
     });
-    this._parent = parent;
-    this._tree = new GMenu.Tree({menu_basename: 'applications.menu'});
-    this._panes = [];
-    this._update();
-    this._tree.connectObject('changed', this._update.bind(this), this);
-    ApplicationsMenu._fav.connectObject('changed', this._update.bind(this), this);
+
+    this.#parent = parent;
+    this.#tree = new GMenu.Tree({
+      menu_basename: 'applications.menu'
+    });
+    this.#panes = [];
+    this.#update();
+    this.#tree.connectObject('changed', this.#update.bind(this), this);
+    AppMenuWidget.#fav.connectObject('changed', this.#update.bind(this), this);
 
   }
 
-  _update() {
-    if (this.visible || this._parent.visible) {
-      this._close_menu();
+  #update() {
+    if (this.visible || this.#parent.visible) {
+      this.#close_menu();
     }
     this.destroy_all_children();
-    let sections = ApplicationsMenu._make_pane('classic-app-menu-pane', true);
+    let sections = AppMenuWidget.#make_pane('classic-app-menu-pane', true);
     this.add_child(sections);
-    this.add_child(ApplicationsMenu._make_pane('classic-app-menu-separator', true));
-    this._tree.load_sync();
-    let categories = ApplicationsMenu._get_categories(this._tree);
+    this.add_child(AppMenuWidget.#make_pane('classic-app-menu-separator', true));
+    this.#tree.load_sync();
+    let categories = AppMenuWidget.#get_categories(this.#tree);
     let max_height = 0; // in menu items
-    this._panes = [];
+    this.#panes = [];
     for (const [cat, apps] of categories) {
-      let pane = ApplicationsMenu._make_pane('classic-app-menu-pane', cat === 'Favourites');
+      let pane = AppMenuWidget.#make_pane('classic-app-menu-pane', cat === 'Favourites');
       let item = new CatMenuItem(cat, pane);
       for (let app of apps) {
         let app_item = new AppMenuItem(app);
-        app_item.connectObject('clicked', this._close_menu.bind(this), app_item);
+        app_item.connectObject('clicked', this.#close_menu.bind(this), app_item);
         pane.add_child(app_item);
       }
       if (cat === 'Favourites') {
         // add button to show all apps
-        let show_apps_button = new Buttons.PushButton();
-        show_apps_button.set_label_text('Show All Applications');
+        let show_apps_button = new Button();
+        show_apps_button.set_text('Show All Applications');
         show_apps_button.set_icon_name('view-grid-symbolic');
-        show_apps_button.connectObject('clicked', this._show_all_apps.bind(this), this);
+        show_apps_button.connectObject('clicked', this.#show_all_apps.bind(this), this);
         pane.add_child(show_apps_button);
       }
       this.add_child(pane);
-      this._panes.push(pane);
-      pane.connectObject('show', this._hide_panes.bind(this), pane);
+      this.#panes.push(pane);
+      pane.connectObject('show', this.#hide_panes.bind(this), pane);
       sections.add_child(item);
       max_height = Math.max(max_height, pane.get_children().length);
     }
@@ -172,7 +188,7 @@ class ApplicationsMenu extends St.BoxLayout {
     // make all app items the same width to avoid menu jumping
     // when hover over different sections and also align top
     // item in each section with section title where possible
-    this._panes.forEach((pane, i) => {
+    this.#panes.forEach((pane, i) => {
       let children = pane.get_children();
       let pad = Math.min(extra + i, max_height - children.length);
       for (let i = 0; i < pad; i++) {
@@ -181,13 +197,13 @@ class ApplicationsMenu extends St.BoxLayout {
     });
   }
 
-  _show_all_apps() {
+  #show_all_apps() {
     Main.overview.showApps();
-    this._close_menu();
+    this.#close_menu();
   }
 
-  _hide_panes(shown) {
-    for (let pane of this._panes) {
+  #hide_panes(shown) {
+    for (let pane of this.#panes) {
       if (pane === shown) {
         continue;
       }
@@ -195,11 +211,11 @@ class ApplicationsMenu extends St.BoxLayout {
     }
   }
 
-  _close_menu() {
-    this._parent.hide();
+  #close_menu() {
+    this.#parent.hide();
   }
 
-  static _make_pane(styleclass, visible) {
+  static #make_pane(styleclass, visible) {
     return new St.BoxLayout({
       reactive: false,
       track_hover: false,
@@ -211,9 +227,9 @@ class ApplicationsMenu extends St.BoxLayout {
     });
   }
 
-  static _get_categories(tree) {
+  static #get_categories(tree) {
     let categories = new Map();
-    categories.set('Favourites', ApplicationsMenu._fav.getFavorites());
+    categories.set('Favourites', AppMenuWidget.#fav.getFavorites());
     let root = tree.get_root_directory();
     let iter = root.iter();
     let next;
@@ -226,7 +242,7 @@ class ApplicationsMenu extends St.BoxLayout {
         continue;
       }
       let cid = dir.get_menu_id();
-      let apps = ApplicationsMenu._load_category(dir);
+      let apps = AppMenuWidget.#load_category(dir);
       if (apps.length > 0) {
         categories.set(cid, apps);
       }
@@ -234,7 +250,7 @@ class ApplicationsMenu extends St.BoxLayout {
     return categories;
   }
 
-  static _load_category(dir) {
+  static #load_category(dir) {
     let iter = dir.iter();
     let next;
     let apps = [];
@@ -242,7 +258,7 @@ class ApplicationsMenu extends St.BoxLayout {
       if (next === GMenu.TreeItemType.ENTRY) {
         let entry = iter.get_entry();
         let aid = entry.get_desktop_file_id();
-        let app = ApplicationsMenu._sys.lookup_app(aid) || new Shell.App({
+        let app = AppMenuWidget.#sys.lookup_app(aid) || new Shell.App({
           app_info: entry.get_app_info(),
         });
         if (app.get_app_info().should_show()) {
@@ -251,7 +267,7 @@ class ApplicationsMenu extends St.BoxLayout {
       } else if (next === GMenu.TreeItemType.DIRECTORY) {
         let subdir = iter.get_directory();
         if (!subdir.get_is_nodisplay()) {
-          apps.push(...ApplicationsMenu._load_category(subdir));
+          apps.push(...AppMenuWidget.#load_category(subdir));
         }
       }
     }
@@ -260,77 +276,15 @@ class ApplicationsMenu extends St.BoxLayout {
 
 }
 
-class AppMenu extends Menu.PopupMenu {
+export class AppMenu extends PopupMenu {
 
   static {
     GObject.registerClass(this);
   }
 
   constructor(anchor) {
-    super(anchor);
-    this.add_custom_item(new ApplicationsMenu(this));
-  }
-
-}
-
-var AppButton = class extends Buttons.PushButton {
-
-  static {
-    GObject.registerClass(this);
-  }
-
-  static _settings = ExtensionUtils.getSettings();
-
-  constructor() {
-    super();
-    this.add_style_class_name('sysbtn');
-
-    AppButton._settings.connectObject(
-      'changed::applications-button-text', () => {
-        this._set_label_text_or_icon(AppButton._settings.get_string('applications-button-text'));
-      },
-      this);
-
-    this._set_label_text_or_icon(AppButton._settings.get_string('applications-button-text'));
-    this.set_menu(
-      this._create_menu.bind(this),
-      this._hide_menu.bind(this),
-      [1, 3]);
-    this._app_menu = null;
-    this.connect('destroy', this._destroy_menu.bind(this));
-    this.connectObject(
-      'hide', this._destroy_menu.bind(this),
-      this);
-  }
-
-  _create_menu() {
-    // apps menu is too hard to create, so we'll do it once
-    if (this._app_menu === null) {
-      this._app_menu = new AppMenu(this);
-    }
-    return this._app_menu;
-  }
-
-  _hide_menu(menu) {
-    menu.hide();
-  }
-
-  _destroy_menu() {
-    this._app_menu?.destroy();
-    this._app_menu = null;
-  }
-
-  _set_label_text_or_icon(value) {
-    const prefix = 'icon:';
-    if (value.startsWith(prefix)) {
-      let name = value.substring(prefix.length);
-      this.set_icon_name(name);
-      this.delete_label_text();
-    } else {
-      this.set_label_text(value);
-      this.add_label_style_class_name('bold');
-      this.delete_icon();
-    }
+    super(anchor, true);
+    this.add_custom_item(new AppMenuWidget(this));
   }
 
 }

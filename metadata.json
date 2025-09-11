@@ -1,7 +1,10 @@
 {
   "name": "Classic Dash Extension",
-  "description": "Classic Dash shell extension for GNOME",
+  "description": "Classic Dash shell extension for GNOME desktop",
+  "version": 2,
+  "version-name": "1.0.0",
   "uuid": "classic-dash@gnome.dev.jaylen.org",
-  "shell-version": ["43"],
-  "settings-schema": "org.gnome.shell.extensions.classic-dash"
+  "shell-version": ["48"],
+  "settings-schema": "org.gnome.shell.extensions.classic-dash",
+  "original-authors": ["Yury Khrustalev"]
 }

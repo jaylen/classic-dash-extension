@@ -30,7 +30,7 @@ Look and feel can be adjusted by modifying CSS styles in [stylesheet.css](styles
 
 ## System Requirements
 
-Currently this extension is written for and tested on Debian 12 and GNOME 43.
+Currently this extension is written for and tested on Debian 13 and GNOME 48.
 
 ## To Do
 

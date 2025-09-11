@@ -1,18 +1,18 @@
 
 .classic-dash-panel {
-  padding: 0 0.1em;
+  padding: 0;
   margin: 0;
   background-color: #323232;
   min-height: 2.0em;
 }
 
 .classic-panel {
-  margin: 0.1em 0;
+  margin: 0.1em;
 }
 
 .classic-icon {
-  margin: 1px;
-  padding: 1px;
+  margin: 1pt;
+  padding: 0;
 }
 
 .classic-button {
@@ -22,11 +22,11 @@
 }
 
 .classic-button:hover {
-  background-color: #4a4a4a;
+  background-color: #484848;
 }
 
 .classic-button:active {
-  background-color: #5a5a5a;
+  background-color: #404040;
 }
 
 .classic-button.sysbtn {

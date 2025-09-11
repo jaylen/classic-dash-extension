@@ -18,17 +18,24 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const {
-  Clutter, GObject, St, GLib
-} = imports.gi;
+'use strict';
 
-const Main = imports.ui.main;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Menu = Me.imports.src.menu;
-const Elements = Me.imports.src.elements;
+import St from 'gi://St';
+import GLib from 'gi://GLib';
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
 
-class Cell extends Elements.Button {
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import {
+  BaseButton,
+} from './elements.js';
+
+import {
+  PopupMenu,
+} from './menu.js';
+
+class Cell extends BaseButton {
 
   static {
     GObject.registerClass(this);
@@ -38,9 +45,9 @@ class Cell extends Elements.Button {
     super();
     this.reactive = true;
     this.track_hover = true;
-    this.set_label_text(text);
-    this._label.x_align = Clutter.ActorAlign.END;
-    this._label.add_style_class_name('mono');
+    this.set_text(text);
+    this.label_widget.style_class_name(true, 'mono');
+    this.label_widget.x_align = Clutter.ActorAlign.END;
   }
 
 }
@@ -53,13 +60,13 @@ class HeaderCell extends Cell {
 
   constructor(text) {
     super(text);
-    this._label.style_class_name(true, 'bg');
-    this._label.x_align = Clutter.ActorAlign.CENTER;
+    this.label_widget.style_class_name(true, 'bg');
+    this.label_widget.x_align = Clutter.ActorAlign.CENTER;
   }
 
 }
 
-class TodayButton extends Elements.Button {
+class TodayButton extends BaseButton {
 
   static {
     GObject.registerClass(this);
@@ -67,10 +74,10 @@ class TodayButton extends Elements.Button {
 
   constructor() {
     super();
-    this.set_label_text('...');
-    this._label.x_align = Clutter.ActorAlign.CENTER;
-    this._label.style_class_name(true, 'bold');
+    this.set_text('...');
+    this.label_widget.style_class_name(true, 'bold');
     this.y_expand = true;
+    this.label_widget.x_align = Clutter.ActorAlign.CENTER;
   }
 
 }
@@ -81,6 +88,11 @@ class Pager extends St.BoxLayout {
     GObject.registerClass(this);
   }
 
+  #cal = null;
+  #prev_button = null;
+  #today_button = null;
+  #next_button = null;
+
   constructor(cal) {
 
     super({
@@ -89,29 +101,33 @@ class Pager extends St.BoxLayout {
       vertical: false,
     });
 
-    this._cal = cal;
-    this._prev_button = new Elements.Button();
-    this._prev_button.set_icon_name('go-previous-symbolic');
-    this._today_button = new TodayButton();
-    this._next_button = new Elements.Button();
-    this._next_button.set_icon_name('go-next-symbolic');
-    this.add_child(this._prev_button);
-    this.add_child(this._today_button);
-    this.add_child(this._next_button);
+    this.#cal = cal;
+    this.#prev_button = new BaseButton();
+    this.#prev_button.set_icon_name('go-previous-symbolic');
+    this.#today_button = new TodayButton();
+    this.#next_button = new BaseButton();
+    this.#next_button.set_icon_name('go-next-symbolic');
+    this.add_child(this.#prev_button);
+    this.add_child(this.#today_button);
+    this.add_child(this.#next_button);
 
-    this._prev_button.connectObject('clicked', () => {
-      this._cal._selected_date = this._cal._selected_date.add_months(-1);
-      this._cal._update_for_date(this._cal._selected_date);
+    this.#prev_button.connectObject('clicked', () => {
+      this.#cal.selected_date = this.#cal.selected_date.add_months(-1);
+      this.#cal.update_for_date(this.#cal.selected_date);
     });
-    this._today_button.connectObject('clicked', () => {
-      this._cal._selected_date = GLib.DateTime.new_now_local();
-      this._cal._update_for_date(this._cal._selected_date);
+    this.#today_button.connectObject('clicked', () => {
+      this.#cal.selected_date = GLib.DateTime.new_now_local();
+      this.#cal.update_for_date(this.#cal.selected_date);
     });
-    this._next_button.connectObject('clicked', () => {
-      this._cal._selected_date = this._cal._selected_date.add_months(1);
-      this._cal._update_for_date(this._cal._selected_date);
+    this.#next_button.connectObject('clicked', () => {
+      this.#cal.selected_date = this.#cal.selected_date.add_months(1);
+      this.#cal.update_for_date(this.#cal.selected_date);
     });
 
+  }
+
+  get today_button() {
+    return this.#today_button;
   }
 
 }
@@ -129,11 +145,11 @@ class DateGrid extends St.Widget {
       layout_manager: new Clutter.GridLayout({}),
     });
     let grid = this.layout_manager;
-    cal._days.forEach((cell, n) => { grid.attach(cell, n + 1, 0, 1, 1); });
-    cal._weeks.forEach((cell, n) => { grid.attach(cell, 0, n + 1, 1, 1); });
-     cal._days.forEach((day, x) => {
-       cal._weeks.forEach((week, y) => {
-        grid.attach(cal._cells[x][y], x + 1, y + 1, 1, 1);
+    cal.days.forEach((cell, n) => { grid.attach(cell, n + 1, 0, 1, 1); });
+    cal.weeks.forEach((cell, n) => { grid.attach(cell, 0, n + 1, 1, 1); });
+     cal.days.forEach((day, x) => {
+       cal.weeks.forEach((week, y) => {
+        grid.attach(cal.cells[x][y], x + 1, y + 1, 1, 1);
       });
     });
   }
@@ -148,6 +164,14 @@ class Calendar extends St.BoxLayout {
 
   static DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  #selected_date = null;
+  #current_date = null;
+  #pager = null;
+  #days = null;
+  #weeks = null;
+  #cells = null;
+  #grid = null;
+
   constructor() {
 
     super({
@@ -157,68 +181,88 @@ class Calendar extends St.BoxLayout {
       vertical: true,
     });
 
-    this._pager = new Pager(this);
-    this.add_child(this._pager);
+    this.#pager = new Pager(this);
+    this.add_child(this.#pager);
 
-    this._days = Calendar.DAYS.map((day) => new HeaderCell(day));
-    this._weeks = [0, 1, 2, 3, 4, 5].map(() => new HeaderCell('00'));
-    this._cells = this._days.map(() => {
-      return this._weeks.map(() => new Cell('...'));
+    this.#days = Calendar.DAYS.map((day) => new HeaderCell(day));
+    this.#weeks = [0, 1, 2, 3, 4, 5].map(() => new HeaderCell('00'));
+    this.#cells  = this.#days.map(() => {
+      return this.#weeks.map(() => new Cell('...'));
     });
 
-    this._grid = new DateGrid(this);
-    this.add_child(this._grid);
+    this.#grid = new DateGrid(this);
+    this.add_child(this.#grid);
 
-    this._selected_date = GLib.DateTime.new_now_local();
-    this._current_date = GLib.DateTime.new_now_local();
+    this.#selected_date = GLib.DateTime.new_now_local();
+    this.#current_date = GLib.DateTime.new_now_local();
 
-    this._update_for_date(this._selected_date);
+    this.update_for_date(this.#selected_date);
 
   }
 
-  _update_for_date(selected) {
-    this._pager._today_button.set_label_text(selected.format('%B %Y'));
+  get selected_date() {
+    return this.#selected_date;
+  }
+
+  set selected_date(value) {
+    this.#selected_date = value;
+  }
+
+  get days() {
+    return this.#days;
+  }
+
+  get weeks() {
+    return this.#weeks;
+  }
+
+  get cells() {
+    return this.#cells;
+  }
+
+  update_for_date(selected) {
+    this.#pager.today_button.set_text(selected.format('%B %Y'));
     let first_day_of_month = GLib.DateTime.new_local(selected.get_year(), selected.get_month(), 1, 11, 59, 59);
     let current_week = selected.get_week_of_year();
     let current_day_of_week = selected.get_day_of_week();
     let start_date = first_day_of_month.add_days(1 - first_day_of_month.get_day_of_week());
-    if (Calendar._equal_dates(start_date, first_day_of_month)) {
+    if (Calendar.#equal_dates(start_date, first_day_of_month)) {
       start_date = start_date.add_days(-7);
     }
-    this._weeks.forEach((cell, y) => {
+    this.#weeks.forEach((cell, y) => {
       let date = start_date.add_days(7 * y);
       let week = date.get_week_of_year();
-      cell.set_label_text(`${week}`.padStart(2, '0'));
+      cell.set_text(`${week}`.padStart(2, '0'));
       cell.style_class_name(week === current_week, 'selected');
     });
-    this._days.forEach((day, x) => {
-      day.style_class_name((x + 1) === current_day_of_week, 'selected');
-      this._weeks.forEach((week, y) => {
-        let cell = this._cells[x][y];
+    this.#days.forEach((day, x) => {
+      day.label_widget.style_class_name((x + 1) === current_day_of_week, 'selected');
+      this.#weeks.forEach((week, y) => {
+        let cell = this.#cells [x][y];
         let date = start_date.add_days(x + 7 * y);
-        cell.set_label_text(`${date.get_day_of_month()}`);
-        cell.style_class_name(Calendar._equal_dates(date, selected), 'framed');
-        cell._label.style_class_name(selected.get_month() !== date.get_month(), 'bg');
+        cell.set_text(`${date.get_day_of_month()}`);
+        cell.style_class_name(Calendar.#equal_dates(date, selected), 'framed');
+        cell.label_widget.style_class_name(selected.get_month() !== date.get_month(), 'bg');
         cell.style_class_name([6, 7].indexOf(date.get_day_of_week()) >= 0, 'special');
       });
     });
   }
 
-  _update() {
+  update() {
     let now = GLib.DateTime.new_now_local();
-    if (Calendar._equal_dates(now, this._current_date)) {
+    if (Calendar.#equal_dates(now, this._current_date)) {
       // don't update if the date is the same
       // or hasn't been set
       return;
     } else {
       this._current_date = now;
     }
-    this._selected_date = this._current_date;
-    this._update_for_date(this._selected_date);
+    this.#selected_date = this._current_date;
+    this.update_for_date(this.#selected_date);
   }
 
-  static _equal_dates(lhs, rhs) {
-    if (lhs === null || rhs === null) {
+  static #equal_dates(lhs, rhs) {
+    if (!lhs || !rhs) {
       return false;
     }
     return lhs.get_year() === rhs.get_year()
@@ -227,31 +271,31 @@ class Calendar extends St.BoxLayout {
 
 }
 
-var CalendarMenu = class extends Menu.PopupMenu {
+export class CalendarMenu extends PopupMenu {
 
   static {
     GObject.registerClass(this);
   }
 
+  #calendar = null;
+
   constructor(anchor) {
-    super(anchor, /* autoclose */ false);
-    this._calendar = new Calendar(this);
-    this.add_custom_item(this._calendar);
-    this.connectObject('show', () => {
-      this._calendar._update();
-    }, this);
+    super(anchor, false);
+    this.#calendar = new Calendar(this);
+    this.add_custom_item(this.#calendar);
+    this.connectObject('show', () => { this.#calendar.update(); }, this);
     Main.overview.connectObject(
-      'showing', this._overview_showing.bind(this),
+      'showing', this.#overview_showing.bind(this),
       this);
   }
 
-  _update() {
-    if (this._calendar.visible) {
-      this._calendar._update();
+  update() {
+    if (this.#calendar.visible) {
+      this.#calendar.update();
     }
   }
 
-  _overview_showing() {
+  #overview_showing() {
     this.close_menu();
   }
 

@@ -18,22 +18,28 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const {
-    Clutter, GObject
-} = imports.gi;
+'use strict';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Menu = Me.imports.src.menu;
-const Label = Me.imports.src.elements.Label;
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
 
-const Main = imports.ui.main;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-var Tooltip = class extends Menu.Anchored {
+import {
+  Anchored,
+} from './anchored.js';
+
+import {
+  Label,
+} from './elements.js';
+
+export class Tooltip extends Anchored {
 
   static {
     GObject.registerClass(this);
   }
+
+  #anchor = null;
 
   constructor(text, anchor) {
     super({
@@ -43,53 +49,49 @@ var Tooltip = class extends Menu.Anchored {
       visible: false,
       layout_manager: new Clutter.BoxLayout({}),
     });
-    this._anchor = anchor;
-    this.add_actor(new Label(text));
-    this.connectObject(
-      'show', this._showing.bind(this),
-      this);
+    this.#anchor = anchor;
+    this.add_child(new Label(text));
     Main.layoutManager.addTopChrome(this, {
       affectsStruts: false,
       trackFullscreen: false,
     });
-    this.connect('destroy', this._destroy.bind(this));
+    this.connectObject('show', this.#showing.bind(this),this);
+    this.connect('destroy', this.#cleanup.bind(this));
   }
 
-  _destroy() {
+  #cleanup() {
     Main.layoutManager.removeChrome(this);
   }
 
-  static tooltip_show_timeout = 900; // ms
-  static tooltip_hide_timeout = 6000; // ms
-  static tooltip_displaying = null;
-  static tooltip_timeout_id = null;
+  #showing() {
+    this.put_near_anchor(this.#anchor);
+  }
 
   static show_tooltip(text, anchor) {
     if (text === null || text === undefined) {
       return;
     }
     Tooltip.hide_tooltip();
-    Tooltip.tooltip_timeout_id = setTimeout(() => {
+    Tooltip.#timeout_id = setTimeout(() => {
       Tooltip.hide_tooltip();
-      Tooltip.tooltip_displaying = new Tooltip(text, anchor);
-      Tooltip.tooltip_displaying.show();
-      // hide tooltip anyway after some time
+      Tooltip.#displaying = new Tooltip(text, anchor);
+      Tooltip.#displaying.show();
       setTimeout(() => {
         Tooltip.hide_tooltip();
-      }, Tooltip.tooltip_hide_timeout);
-    }, Tooltip.tooltip_show_timeout);
+      }, Tooltip.#hide_timeout);
+    }, Tooltip.#show_timeout);
   }
 
   static hide_tooltip() {
-    clearTimeout(Tooltip.tooltip_timeout_id);
-    Tooltip.tooltip_timeout_id = null;
-    Tooltip.tooltip_displaying?.destroy();
-    Tooltip.tooltip_displaying = null;
+    clearTimeout(Tooltip.#timeout_id);
+    Tooltip.#timeout_id = null;
+    Tooltip.#displaying?.destroy();
+    Tooltip.#displaying = null;
   }
 
-  _showing() {
-    // set location of the menu wrt the anchor button
-    this.set_location_near_anchor(this._anchor);
-  }
+  static #show_timeout = 800; // ms
+  static #hide_timeout = 8000; // ms
+  static #displaying = null;
+  static #timeout_id = null;
 
 }

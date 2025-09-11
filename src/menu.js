@@ -18,48 +18,30 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const {
-  Clutter, GObject, St, Meta
-} = imports.gi;
+'use strict';
 
-const AppSystem = imports.gi.Shell.AppSystem;
-const SystemActions = imports.misc.systemActions;
+import St from 'gi://St';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
 
-const Main = imports.ui.main;
+import {
+  Anchored,
+} from './anchored.js';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Elements = Me.imports.src.elements;
+import {
+  BaseButton,
+} from './elements.js';
 
-var Anchored = class extends St.Widget {
+import {
+  Extension
+} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-  static {
-    GObject.registerClass(this);
-  }
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as SystemActions from 'resource:///org/gnome/shell/misc/systemActions.js';
 
-  constructor(params) {
-    super(params);
-  }
-
-  set_location_near_anchor(anchor) {
-    if (anchor._unmamaging) {
-      return;
-    }
-    const padding = 10;
-    const m = Main.layoutManager.primaryMonitor;
-    let rect = anchor.get_transformed_extents();
-    let tl = rect.get_top_left();
-    let br = rect.get_bottom_right();
-    let h = br.y - tl.y;
-    let x = Math.min((tl.x + br.x - this.width) / 2, m.width - this.width - padding);
-    x = Math.max(x, padding);
-    let y = m.y + m.height - h - 2 * anchor.y - padding - this.height;
-    this.set_position(x, y);
-  }
-
-}
-
-var MenuItem = class extends Elements.Button {
+export class MenuItem extends BaseButton {
 
   static {
     GObject.registerClass(this);
@@ -69,7 +51,7 @@ var MenuItem = class extends Elements.Button {
     super();
     this.add_style_class_name('width-12');
     this.add_style_class_name('height-2');
-    this.set_label_text(text);
+    this.set_text(text);
   }
 
   set_sensitive(sensitive) {
@@ -80,7 +62,213 @@ var MenuItem = class extends Elements.Button {
 
 }
 
-var ImageMenuItem = class extends MenuItem {
+export class PopupMenu extends Anchored {
+
+  static {
+    GObject.registerClass(this);
+  }
+
+  #anchor = null;
+  #autoclose = null;
+  #container = null;
+  #grab = null;
+
+  constructor(anchor, autoclose) {
+
+    super({
+      reactive: true,
+      track_hover: true,
+      x_expand: false,
+      y_expand: false,
+      visible: false,
+    });
+
+    this.#anchor = anchor;
+    this.#autoclose = autoclose;
+    this.#container = new St.BoxLayout({
+      style_class: 'classic-popup-menu',
+      reactive: true,
+      track_hover: true,
+      x_expand: false,
+      y_expand: false,
+      vertical: true,
+    });
+    this.add_child(this.#container);
+
+    this.connect('destroy', this.#cleanup.bind(this));
+
+    this.connectObject(
+      'key-press-event', this.#key_pressed.bind(this),
+      'show', this.#showing.bind(this),
+      'hide', this.#hiding.bind(this),
+      this);
+
+    if (this.#autoclose) {
+      this.connectObject(
+        'button-press-event', this.close_menu.bind(this),
+        this);
+    }
+
+    global.display.connectObject(
+      'in-fullscreen-changed', this.close_menu.bind(this),
+      this);
+
+    Main.layoutManager.addTopChrome(this, {
+      affectsStruts: false,
+      trackFullscreen: false,
+    });
+
+  }
+
+  add_menu_item(text, callback) {
+    let item = new MenuItem(text);
+    item.connectObject('clicked', callback, this);
+    item.connectObject('clicked', this.close_menu.bind(this), this);
+    this.add_custom_item(item);
+    return item;
+  }
+
+  add_separator_menu_item() {
+    let separator = new St.Widget({
+      style_class: 'classic-menu-item-separator',
+      x_expand: true,
+      y_expand: true,
+      y_align: Clutter.ActorAlign.CENTER,
+    });
+    this.add_custom_item(separator);
+    return separator;
+  }
+
+  add_custom_item(widget) {
+    this.#container.add_child(widget);
+  }
+
+  #cleanup() {
+    Main.layoutManager.removeChrome(this);
+  }
+
+  #key_pressed(actor, event) {
+    let key = event.get_key_symbol();
+    if (key === Clutter.KEY_Escape) {
+      this.close_menu();
+    }
+  }
+
+  #showing() {
+    // set location of the menu wrt the anchor button
+    this.put_near_anchor(this.#anchor);
+    // display as modal element
+    if (this.#autoclose) {
+      this.#grab = Main.pushModal(this);
+    }
+  }
+
+  #hiding() {
+    // undo modal display
+    if (this.#autoclose && this.#grab) {
+      Main.popModal(this.#grab);
+    }
+    this.#grab = null;
+  }
+
+  close_menu() {
+    this.hide();
+  }
+
+}
+
+export class WinButtonMenu extends PopupMenu {
+
+  static {
+    GObject.registerClass(this);
+  }
+
+  #window = null;
+
+  constructor(anchor, window) {
+
+    super(anchor, true);
+    this.#window = window;
+
+    /* Open new window if this is supported.  */
+    let tracker = Shell.WindowTracker.get_default();
+    let app = tracker.get_window_app(this.#window);
+    if (app.can_open_new_window()) {
+      this.add_menu_item(
+        'Open New Window',
+        this.#open_new_window.bind(this));
+      this.add_separator_menu_item();
+    }
+
+    /* Toggle maximised state.  */
+    let maximised = this.#window.get_maximized() === Meta.MaximizeFlags.BOTH;
+    let maximise = this.add_menu_item(
+      maximised ? 'Unmaximise' : 'Maximise',
+      this.#toggle_maximise.bind(this));
+    maximise.set_sensitive(this.#window.can_maximize());
+
+    /* Toggle minimised state.  */
+    let minimise = this.add_menu_item(
+      this.#window.minimized ? 'Unminimise' : 'Minimise',
+      this.#toggle_minimise.bind(this));
+    minimise.set_sensitive(this.#window.can_minimize());
+
+    /* Close window.  */
+    this.add_separator_menu_item();
+    let close = this.add_menu_item(
+      'Close Window',
+      this.#close_window.bind(this));
+    close.set_sensitive(this.#window.can_close());
+
+    this.#window.connectObject(
+      'unmanaging', this.#unmanageable.bind(this),
+      this);
+
+  }
+
+  #unmanageable() {
+    this.#window = null;
+  }
+
+  #toggle_minimise() {
+    if (this.#window) {
+      if (this.#window.minimized) {
+        this.#window.unminimize();
+        this.#window.activate(global.get_current_time());
+      } else {
+        this.#window.minimize();
+      }
+    }
+  }
+
+  #toggle_maximise() {
+    if (this.#window) {
+      if (this.#window.get_maximized() === Meta.MaximizeFlags.BOTH) {
+        this.#window.unmaximize(Meta.MaximizeFlags.BOTH);
+      } else {
+        this.#window.maximize(Meta.MaximizeFlags.BOTH);
+      }
+      this.#window.activate(global.get_current_time());
+    }
+  }
+
+  #close_window() {
+    if (this.#window) {
+      this.#window.delete(global.get_current_time());
+    }
+  }
+
+  #open_new_window() {
+    let tracker = Shell.WindowTracker.get_default();
+    let app = tracker.get_window_app(this.#window);
+    if (app.can_open_new_window()) {
+      app.open_new_window(-1);
+    }
+  }
+
+}
+
+class ImageMenuItem extends MenuItem {
 
   static {
     GObject.registerClass(this);
@@ -93,7 +281,7 @@ var ImageMenuItem = class extends MenuItem {
 
 }
 
-var ActionMenuItem = class extends ImageMenuItem {
+export class ActionMenuItem extends ImageMenuItem {
 
   static {
     GObject.registerClass(this);
@@ -104,233 +292,71 @@ var ActionMenuItem = class extends ImageMenuItem {
   }
 
   set_action_button(icon, fun) {
-    let button = new Elements.Button();
+    let button = new BaseButton();
     button.add_style_class_name('naked');
     button.add_style_class_name('subtle');
     button.set_icon_name(icon);
-    this._box.insert_child_at_index(button, -1); // insert at the end
     button.connectObject('clicked', fun, this);
+    this.set_widget(button);
   }
 
 }
 
-var PopupMenu = class extends Anchored {
+export class SysButtonMenu extends PopupMenu {
 
   static {
     GObject.registerClass(this);
   }
 
-  constructor(anchor, autoclose) {
-
-    super({
-      reactive: true,
-      track_hover: true,
-      x_expand: false,
-      y_expand: false,
-      visible: false,
-    });
-    this._anchor = anchor;
-    this._autoclose = autoclose === undefined ? true : autoclose;
-    this._container = new St.BoxLayout({
-      style_class: 'classic-popup-menu',
-      reactive: true,
-      track_hover: true,
-      x_expand: false,
-      y_expand: false,
-      vertical: true,
-    });
-    this.add_actor(this._container);
-
-    this.connect('destroy', this._destroy.bind(this));
-
-    this.connectObject(
-      'key-press-event', this._key_pressed.bind(this),
-      'show', this._showing.bind(this),
-      'hide', this._hiding.bind(this),
-      this);
-
-    if (this._autoclose) {
-      this.connectObject(
-        'button-press-event', this.close_menu.bind(this),
-        this);
-    }
-
-    global.display.connectObject(
-      'in-fullscreen-changed', this.close_menu.bind(this),
-      this);
-
-    this._grab = null; // for modal popup
-
-    // add to stage
-    Main.layoutManager.addTopChrome(this, {
-      affectsStruts: false,
-      trackFullscreen: false,
-    });
-
-  }
-
-  _destroy() {
-    // remove from stage
-    Main.layoutManager.removeChrome(this);
-  }
-
-  _key_pressed(actor, event) {
-    let key = event.get_key_symbol();
-    if (key === Clutter.KEY_Escape) {
-      this.hide();
-    }
-  }
-
-  _showing() {
-    // set location of the menu wrt the anchor button
-    this.set_location_near_anchor(this._anchor);
-    // display as modal element
-    if (this._autoclose) {
-      this._grab = Main.pushModal(this);
-    }
-  }
-
-  _hiding() {
-    // undo modal display
-    if (this._autoclose) {
-      if (this._grab) {
-        Main.popModal(this._grab);
-      }
-      this._grab = null;
-    }
-  }
-
-  add_menu_item(text, callback) {
-    let item = new MenuItem(text);
-    item.connectObject('clicked', callback, this);
-    item.connectObject('clicked', this.close_menu.bind(this), this);
-    this._container.add_child(item);
-    return item;
-  }
-
-  add_separator_menu_item() {
-    let separator = new St.Widget({
-      style_class: 'classic-menu-item-separator',
-      x_expand: true,
-      y_expand: true,
-      y_align: Clutter.ActorAlign.CENTER,
-    });
-    this._container.add_child(separator);
-    return separator;
-  }
-
-  add_custom_item(widget) {
-    this._container.add_child(widget);
-  }
-
-  close_menu() {
-    this.hide();
-  }
-
-}
-
-var WinButtonMenu = class extends PopupMenu {
-
-  static {
-    GObject.registerClass(this);
-  }
-
-  constructor(anchor, window) {
-
-    super(anchor);
-    this._window = window;
-
-    let maximized = this._window.get_maximized() === Meta.MaximizeFlags.BOTH;
-    let max_text = maximized ? 'Unmaximise' : 'Maximise';
-    let maximise = this.add_menu_item(max_text, this._toggle_maximise.bind(this));
-    maximise.set_sensitive(this._window.can_maximize());
-
-    let min_text = this._window.minimized ? 'Unminimise' : 'Minimise';
-    let minimise = this.add_menu_item(min_text, this._toggle_minimise.bind(this));
-    minimise.set_sensitive(this._window.can_minimize());
-
-    this.add_separator_menu_item();
-
-    let close = this.add_menu_item('Close Window', this._close_window.bind(this));
-    close.set_sensitive(this._window.can_close());
-
-    this._window.connectObject(
-      'unmanaging', this._set_unmanageable.bind(this),
-      this);
-
-  }
-
-  _set_unmanageable() {
-    this._window = null;
-  }
-
-  _toggle_minimise() {
-    if (this._window === null) {
-      return;
-    }
-    if (this._window.minimized) {
-      this._window.unminimize();
-      this._window.activate(global.get_current_time());
-    } else {
-      this._window.minimize();
-    }
-  }
-
-  _toggle_maximise() {
-    if (this._window === null) {
-      return;
-    }
-    if (this._window.get_maximized() === Meta.MaximizeFlags.BOTH) {
-      this._window.unmaximize(Meta.MaximizeFlags.BOTH);
-    } else {
-      this._window.maximize(Meta.MaximizeFlags.BOTH);
-    }
-    this._window.activate(global.get_current_time());
-  }
-
-  _close_window() {
-    if (this._window === null) {
-      return;
-    }
-    this._window.delete(global.get_current_time());
-  }
-
-}
-
-var SysButtonMenu = class extends PopupMenu {
-
-  static {
-    GObject.registerClass(this);
-  }
-
-  static _sys = SystemActions.getDefault();
+  static #sys = Shell.AppSystem.get_default();
+  static #act = SystemActions.getDefault();
 
   constructor(anchor) {
-    super(anchor);
-    if (SysButtonMenu._sys.canPowerOff) {
-      this.add_menu_item('Power Off...', this._system_power_off.bind(this));
+    super(anchor, true);
+    if (SysButtonMenu.#act.canPowerOff) {
+      this.add_menu_item(
+        'Power Off...',
+        this.#system_power_off.bind(this));
     }
-    if (SysButtonMenu._sys.canRestart) {
-      this.add_menu_item('Restart...', this._system_restart.bind(this));
+    if (SysButtonMenu.#act.canRestart) {
+      this.add_menu_item(
+        'Restart...',
+        this.#system_restart.bind(this));
     }
-    if (SysButtonMenu._sys.canPowerOff) {
-      this.add_menu_item('Logout...', this._system_logout.bind(this));
+    if (SysButtonMenu.#act.canPowerOff) {
+      this.add_menu_item(
+        'Logout...',
+        this.#system_logout.bind(this));
     }
-    if (SysButtonMenu._sys.canLockScreen) {
-      this.add_menu_item('Lock screen...', this._system_lock_screen.bind(this));
+    if (SysButtonMenu.#act.canLockScreen) {
+      this.add_menu_item(
+        'Lock screen...',
+        this.#system_lock_screen.bind(this));
     }
-    if (SysButtonMenu._sys.canSuspend) {
-      this.add_menu_item('Suspend...', this._system_suspend.bind(this));
+    if (SysButtonMenu.#act.canSuspend) {
+      this.add_menu_item(
+        'Suspend...',
+        this.#system_suspend.bind(this));
     }
     this.add_separator_menu_item();
-    this.add_menu_item('System Settings', this._system_settings.bind(this));
-    this.add_menu_item('Dash Settings', this._dash_settings.bind(this));
+    if (SysButtonMenu.#sys.lookup_app('org.gnome.Settings.desktop')) {
+      this.add_menu_item(
+        'System Settings',
+        this.#system_settings.bind(this));
+    }
+    this.add_menu_item(
+      'Dash Settings',
+      this.#dash_settings.bind(this));
     this.add_separator_menu_item();
-    this.add_menu_item('Show Overview', this._show_overview.bind(this));
-    this.add_menu_item('Minimise All Windows', this._minimise_all_windows.bind(this));
+    this.add_menu_item(
+      'Show Overview',
+      this.#show_overview.bind(this));
+    this.add_menu_item(
+      'Minimise All Windows',
+      this.#minimise_all_windows.bind(this));
   }
 
-  _minimise_all_windows() {
+  #minimise_all_windows() {
     let windows = global.get_window_actors().map(w => w.metaWindow);
     for (let window of windows) {
       if (window.skip_taskbar) {
@@ -340,42 +366,43 @@ var SysButtonMenu = class extends PopupMenu {
     }
   }
 
-  _show_overview() {
+  #show_overview() {
     Main.overview.show();
   }
 
-  _dash_settings() {
-    ExtensionUtils.openPrefs();
+  #dash_settings() {
+    const self = Extension.lookupByURL(import.meta.url);
+    self.openPreferences();
   }
 
-  _system_settings() {
-    const settings_app = AppSystem.get_default().lookup_app('org.gnome.Settings.desktop');
+  #system_settings() {
+    const settings_app = SysButtonMenu.#sys.lookup_app('org.gnome.Settings.desktop');
     settings_app?.activate();
   }
 
-  _system_lock_screen() {
+  #system_lock_screen() {
     Main.overview.hide();
-    SysButtonMenu._sys.activateLockScreen();
+    SysButtonMenu.#act.activateLockScreen();
   }
 
-  _system_suspend() {
+  #system_suspend() {
     Main.overview.hide();
-    SysButtonMenu._sys.activateSuspend();
+    SysButtonMenu.#act.activateSuspend();
   }
 
-  _system_logout() {
+  #system_logout() {
     Main.overview.hide();
-    SysButtonMenu._sys.activateLogout();
+    SysButtonMenu.#act.activateLogout();
   }
 
-  _system_restart() {
+  #system_restart() {
     Main.overview.hide();
-    SysButtonMenu._sys.activateRestart();
+    SysButtonMenu.#act.activateRestart();
   }
 
-  _system_power_off() {
+  #system_power_off() {
     Main.overview.hide();
-    SysButtonMenu._sys.activatePowerOff();
+    SysButtonMenu.#act.activatePowerOff();
   }
 
 }

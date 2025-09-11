@@ -18,15 +18,14 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Dash = Me.imports.dash.Dash;
-const TopBar = Me.imports.src.topbar;
+'use strict';
 
-const { Meta } = imports.gi;
-const Overview = imports.ui.overview.Overview;
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Overview } from 'resource:///org/gnome/shell/ui/overview.js';
+import { Dash } from './src/dash.js';
+import { TopBar } from './src/topbar.js';
 
-function _inject(target, method, fun) {
+function inject(target, method, fun) {
   let f = target[method];
   if (f instanceof Function) {
     target[method] = fun;
@@ -35,37 +34,41 @@ function _inject(target, method, fun) {
   return null;
 }
 
-class ClassicDashExtension {
+export default class ClassicDashExtension extends Extension {
 
-  constructor() {
-    this.dash = null;
-    this._replaced = null; // for overview startup function
+  #dash = null;
+  #topbar = null;
+  #replaced = null;
+
+  constructor(metadata) {
+    super(metadata);
   }
 
   enable() {
-    // this will hide the overview at startup
-    this._replaced = _inject(Overview.prototype, 'runStartupAnimation', (callback) => {
-      TopBar.hide();
-      Meta.disable_unredirect_for_display(global.display);
-      callback();
-    });
-    this.dash = new Dash();
+    this.#dash = new Dash(this.getSettings());
+    this.#topbar = new TopBar();
+    let fun = (callback) => {
+      this.#topbar?.hide();
+      if (callback instanceof Function) {
+        callback();
+      }
+    };
+    this.#replaced = inject(Overview.prototype, 'runStartupAnimation', fun);
   }
 
   disable() {
-    if (this._replaced !== null) {
-      _inject(Overview.prototype, 'runStartupAnimation', this._replaced);
-      this._replaced = null;
+    if (this.#replaced !== null) {
+      inject(Overview.prototype, 'runStartupAnimation', this.#replaced);
+      this.#replaced = null;
     }
-    if (this.dash !== null) {
-      this.dash.destroy();
-      this.dash = null;
+    if (this.#dash !== null) {
+      this.#dash.destroy();
+      this.#dash = null;
     }
-    TopBar.show();
+    if (this.#topbar !== null) {
+      this.#topbar.destroy();
+      this.#topbar = null;
+    }
   }
 
-}
-
-function init() {
-  return new ClassicDashExtension();
 }

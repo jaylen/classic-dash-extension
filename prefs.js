@@ -18,125 +18,94 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-imports.gi.versions.Gtk = "4.0";
+'use strict';
 
-const { Adw, GObject, Gtk, Gio, GLib } = imports.gi;
+import Gio from 'gi://Gio';
+import Adw from 'gi://Adw';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Version = Me.imports.version.Version;
+import {
+  ExtensionPreferences,
+} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-function init() {}
+import {
+  params,
+} from './settings.js';
 
-class SettingsWidget extends Adw.PreferencesPage {
+export default class ClassicPreferences extends ExtensionPreferences {
 
-  static {
-    GObject.registerClass(this);
-  }
+  fillPreferencesWindow(window) {
 
-  static _settings = ExtensionUtils.getSettings();
+    const pages = new Map();
 
-  constructor() {
-
-    super();
-
-    let main = new Adw.PreferencesGroup({
-      title: `Classic Dash Extension Settings ${Version.current}`,
-    });
-    this.add(main);
-
-    this._actions = new Gio.SimpleActionGroup();
-    this.insert_action_group('classic-dash', this._actions);
-
-    let schema = SettingsWidget._settings.settings_schema;
-    let grid = SettingsWidget._box(12);
-    main.add(grid);
-
-    const BOOL = GLib.VariantType.new('b');
-    const STRING = GLib.VariantType.new('s');
-
-    if (schema instanceof Gio.SettingsSchema) {
-      let names = schema.list_keys();
-      names.sort();
-      let keys = names.map((name) => schema.get_key(name));
-      keys.sort((a, b) => {
-        let ta = a.get_value_type();
-        let tb = b.get_value_type();
-        let pa = ta.equal(BOOL) ? 0 : ta.equal(STRING) ? 1 : 2;
-        let pb = tb.equal(BOOL) ? 0 : tb.equal(STRING) ? 1 : 2;
-        return pa - pb;
-      });
-      keys.forEach((key, n) => {
-        let id = key.get_name();
-        let summary = key.get_summary();
-        let vtype = key.get_value_type();
-        if (vtype.equal(BOOL)) {
-          this._actions.add_action(SettingsWidget._settings.create_action(id));
-          grid.attach(SettingsWidget._toggle_row(id, summary), 0, n, 2, 1);
-        } else if (vtype.equal(STRING)) {
-          let action = SettingsWidget._settings.create_action(id);
-          this._actions.add_action(action);
-          grid.attach(SettingsWidget._label(summary), 0, n, 1, 1);
-          let entry = SettingsWidget._entry(SettingsWidget._settings, action, id);
-          SettingsWidget._settings.connect(`changed::${id}`, () => {
-            entry.buffer.text = SettingsWidget._settings.get_string(id);
-          });
-          grid.attach(entry, 1, n, 1, 1);
-        } else {
-          grid.attach(SettingsWidget._label(`Unknown type of param '${id}'`), 0, n, 2, 1);
-        }
-      });
-    } else {
-      grid.attach(SettingsWidget._label('Error: Schema file not found'), 0, 0, 1, 1);
+    for (const [key, param] of Object.entries(params)) {
+      let group = param.group;
+      if (!pages.has(group)) {
+        pages.set(group, []);
+      }
+      param.key = key;
+      pages.get(group).push(param);
     }
 
-  }
+    window._settings = this.getSettings();
 
-  static _box(spacing) {
-    return new Gtk.Grid({
-      column_spacing: spacing,
-      row_spacing: spacing,
+    pages.forEach((params, title) => {
+      const page = new Adw.PreferencesPage({
+        title: title,
+        icon_name: 'gnome-settings',
+      });
+      window.add(page);
+      const group = new Adw.PreferencesGroup();
+      page.add(group);
+      params.forEach((param) => {
+        let row;
+        switch (param.type) {
+          case 'b':
+            row = new Adw.SwitchRow({
+              title: param.summary,
+              subtitle: param.description,
+            });
+            window._settings.bind(param.key, row, 'active', Gio.SettingsBindFlags.DEFAULT);
+            break;
+          case 's':
+            row = new Adw.EntryRow({
+              title: param.summary,
+              text: window._settings.get_string(param.key),
+              show_apply_button: true,
+            });
+            row.connect('apply', () => {
+              window._settings.set_string(param.key, row.text);
+            });
+            window._settings.connect(`changed::${param.key}`, () => {
+              row.text = window._settings.get_string(param.key);
+            });
+            break;
+          default:
+            return;
+        }
+        group.add(row);
+      });
+
     });
-  }
 
-  static _label(text) {
-    return new Gtk.Label({
-      label: text,
-      halign: Gtk.Align.START,
-      valign: Gtk.Align.CENTER,
+    let page = new Adw.PreferencesPage({
+      title: 'About',
+      icon_name: 'info',
     });
-  }
-
-  static _toggle_row(id, summary) {
-    let row = SettingsWidget._box(12);
-    let label = SettingsWidget._label(summary);
-    label.hexpand = true;
-    let toggle = new Gtk.Switch({
-      action_name: `classic-dash.${id}`,
-      valign: Gtk.Align.CENTER,
+    let group1 = new Adw.PreferencesGroup({
+      title: `${this.metadata.name} ${this.metadata['version-name']}`,
+      description: this.metadata.description,
     });
-    row.attach(label, 0, 0, 1, 1);
-    row.attach(toggle, 1, 0, 1, 1);
-    return row;
-  }
-
-  static _entry(settings, action, id) {
-    let entry = new Gtk.Entry({
-      valign: Gtk.Align.CENTER,
-      hexpand: true,
-      secondary_icon_name: 'document-send',
+    page.add(group1);
+    let group2 = new Adw.PreferencesGroup({ title: 'Authors:' });
+    this.metadata['original-authors'].forEach((author) => {
+      group2.add(new Adw.ActionRow({
+        title: author,
+        icon_name: 'person',
+      }));
     });
-    entry.buffer.text = settings.get_string(id);
-    let fun = () => {
-      action.change_state(GLib.Variant.new_string(entry.buffer.text));
-    };
-    entry.connect('activate', fun);
-    entry.connect('icon-release', fun);
-    return entry;
+    page.add(group2);
+    window.add(page);
+
   }
 
-}
-
-function buildPrefsWidget() {
-  return new SettingsWidget();
 }
