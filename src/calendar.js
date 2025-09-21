@@ -76,8 +76,9 @@ class TodayButton extends BaseButton {
     super();
     this.set_text('...');
     this.label_widget.style_class_name(true, 'bold');
-    this.y_expand = true;
-    this.label_widget.x_align = Clutter.ActorAlign.CENTER;
+    this.label_widget.set_x_align(Clutter.ActorAlign.CENTER);
+    this.label_widget.set_x_expand(true);
+    this.set_x_expand(true);
   }
 
 }
@@ -96,7 +97,7 @@ class Pager extends St.BoxLayout {
   constructor(cal) {
 
     super({
-      x_expand: false,
+      x_expand: true,
       y_expand: true,
       vertical: false,
     });
