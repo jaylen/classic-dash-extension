@@ -151,3 +151,8 @@
   background-color: #3c3c3c;
   padding: 0.5em;
 }
+
+.classic-calendar-date {
+  padding: 0.2em;
+  margin-bottom: 0;
+}

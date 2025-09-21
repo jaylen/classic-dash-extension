@@ -28,6 +28,7 @@ import GObject from 'gi://GObject';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {
+  Button,
   BaseButton,
 } from './elements.js';
 
@@ -66,6 +67,45 @@ class HeaderCell extends Cell {
 
 }
 
+class DateCell extends Cell {
+
+  static {
+    GObject.registerClass(this);
+  }
+
+  static #selected = null;
+  #callback = null;
+  #date = null;
+
+  constructor(text, callback) {
+    super(text);
+    this.connectObject('clicked', this.#choose_date.bind(this), this);
+    this.#callback = callback;
+  }
+
+  set_date(date) {
+    this.#date = date;
+  }
+
+  #choose_date() {
+    if (this.#callback) {
+      this.#callback(this.#date);
+    }
+    DateCell.clear(this);
+  }
+
+  static clear(another) {
+    if (DateCell.#selected) {
+      DateCell.#selected.style_class_name(false, 'selected');
+    }
+    DateCell.#selected = another;
+    if (DateCell.#selected) {
+      DateCell.#selected.style_class_name(true, 'selected');
+    }
+  }
+
+}
+
 class TodayButton extends BaseButton {
 
   static {
@@ -76,6 +116,7 @@ class TodayButton extends BaseButton {
     super();
     this.set_text('...');
     this.label_widget.style_class_name(true, 'bold');
+    this.label_widget.style_class_name(true, 'mono');
     this.label_widget.set_x_align(Clutter.ActorAlign.CENTER);
     this.label_widget.set_x_expand(true);
     this.set_x_expand(true);
@@ -172,6 +213,7 @@ class Calendar extends St.BoxLayout {
   #weeks = null;
   #cells = null;
   #grid = null;
+  #showdate = null;
 
   constructor() {
 
@@ -188,11 +230,18 @@ class Calendar extends St.BoxLayout {
     this.#days = Calendar.DAYS.map((day) => new HeaderCell(day));
     this.#weeks = [0, 1, 2, 3, 4, 5].map(() => new HeaderCell('00'));
     this.#cells  = this.#days.map(() => {
-      return this.#weeks.map(() => new Cell('...'));
+      return this.#weeks.map(() => new DateCell('...', this.hover_date.bind(this)));
     });
 
     this.#grid = new DateGrid(this);
     this.add_child(this.#grid);
+
+    this.#showdate = new Button('...');
+    this.#showdate.style_class_name(true, 'classic-calendar-date');
+    this.#showdate.style_class_name(true, 'mono');
+    this.#showdate.set_x_expand(true);
+    this.#showdate.set_x_align(Clutter.ActorAlign.CENTER);
+    this.add_child(this.#showdate);
 
     this.#selected_date = GLib.DateTime.new_now_local();
     this.#current_date = GLib.DateTime.new_now_local();
@@ -222,7 +271,9 @@ class Calendar extends St.BoxLayout {
   }
 
   update_for_date(selected) {
+    DateCell.clear(null);
     this.#pager.today_button.set_text(selected.format('%B %Y'));
+    this.#showdate.set_text(selected.format('%A %d %B %Y %Z'));
     let first_day_of_month = GLib.DateTime.new_local(selected.get_year(), selected.get_month(), 1, 11, 59, 59);
     let current_week = selected.get_week_of_year();
     let current_day_of_week = selected.get_day_of_week();
@@ -241,6 +292,7 @@ class Calendar extends St.BoxLayout {
       this.#weeks.forEach((week, y) => {
         let cell = this.#cells [x][y];
         let date = start_date.add_days(x + 7 * y);
+        cell.set_date(date);
         cell.set_text(`${date.get_day_of_month()}`);
         cell.style_class_name(Calendar.#equal_dates(date, selected), 'framed');
         cell.label_widget.style_class_name(selected.get_month() !== date.get_month(), 'bg');
@@ -251,15 +303,19 @@ class Calendar extends St.BoxLayout {
 
   update() {
     let now = GLib.DateTime.new_now_local();
-    if (Calendar.#equal_dates(now, this._current_date)) {
+    if (Calendar.#equal_dates(now, this.current_date)) {
       // don't update if the date is the same
       // or hasn't been set
       return;
     } else {
-      this._current_date = now;
+      this.current_date = now;
     }
-    this.#selected_date = this._current_date;
+    this.#selected_date = this.current_date;
     this.update_for_date(this.#selected_date);
+  }
+
+  hover_date(date) {
+    this.#showdate.set_text(date.format('%A %d %B %Y %Z'));
   }
 
   static #equal_dates(lhs, rhs) {
