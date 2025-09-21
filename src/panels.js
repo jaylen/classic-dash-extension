@@ -318,7 +318,7 @@ class FavButton extends Button {
     this.#app = app;
     this.#settings = settings;
     this.#sys = Shell.AppSystem.get_default();
-    this.set_icon_name(app.create_icon_texture(Icon.ICON_SIZE).icon_name);
+    this.set_icon(app.create_icon_texture(Icon.ICON_SIZE));
     this.set_tooltip_text(this.#app.get_name());
     this.connectObject('clicked', this.#launch.bind(this), this);
     this.#setup_app_state_changed();
