@@ -92,6 +92,12 @@ export class Icon extends St.Bin {
     });
   }
 
+  set_gicon(icon) {
+    if (icon) {
+      this.child.set_gicon(icon);
+    }
+  }
+
 }
 
 export class BaseButton extends St.Button {

@@ -56,25 +56,22 @@ class WinButton extends Button {
 
   #window = null;
   #settings = null;
-  #app = null;
 
-  constructor(window, settings) {
+  constructor(window, icon, settings) {
 
     super();
     this.style_class_name(true, 'width-12');
     this.#window = window;
     this.#settings = settings;
 
-    this.set_icon_name('application-x-executable');
-    setTimeout(() => {
-      let tracker = Shell.WindowTracker.get_default();
-      let app = tracker.get_window_app(this.#window);
-      if (app && !app.is_window_backed()) {
-        let icon = app.create_icon_texture(Icon.ICON_SIZE);
-        this.set_icon_name(icon.icon_name);
-        this.#app = app;
-      }
-    }, 10);
+    if (icon) {
+      let x = new Icon('application-x-executable');
+      x.set_gicon(icon)
+      this.set_icon(x);
+    } else {
+      this.set_icon_name('application-x-executable');
+    }
+
     let title = this.title;
     this.set_text(title);
     this.set_tooltip_text(title);
@@ -126,10 +123,6 @@ class WinButton extends Button {
 
   get workspace_index() {
     return this.#window.get_workspace().index();
-  }
-
-  get app() {
-    return this.#app;
   }
 
   update_workspace(workspace) {
@@ -268,11 +261,12 @@ export class WinPanel extends BoxPanel {
     } else {
       group = children;
     }
+    let icon = app.get_icon();
     if (group.length === 0) {
-      this.add_child(new WinButton(window, this.#settings));
+      this.add_child(new WinButton(window, icon, this.#settings));
     } else {
       let last = group.at(-1);
-      this.insert_child_above(new WinButton(window, this.#settings), last);
+      this.insert_child_above(new WinButton(window, icon, this.#settings), last);
     }
   }
 
@@ -281,7 +275,7 @@ export class WinPanel extends BoxPanel {
       return;
     }
     let children = this.get_children();
-    let button = children.find(child => child._window === window);
+    let button = children.find(child => child.window === window);
     if (button) {
       button.style_class_name(true, 'attention');
     }
