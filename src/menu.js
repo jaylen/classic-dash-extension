@@ -47,6 +47,8 @@ export class MenuItem extends BaseButton {
     GObject.registerClass(this);
   }
 
+  #data = null;
+
   constructor(text) {
     super();
     this.add_style_class_name('width-12');
@@ -58,6 +60,14 @@ export class MenuItem extends BaseButton {
     this.reactive = sensitive;
     this.can_focus = sensitive;
     this.style_class_name(!sensitive, 'insensitive');
+  }
+
+  set data(value) {
+    this.#data = value;
+  }
+
+  get data() {
+    return this.#data;
   }
 
 }
@@ -96,6 +106,10 @@ export class PopupMenu extends Anchored {
     this.add_child(this.#container);
 
     this.connect('destroy', this.#cleanup.bind(this));
+    this.#container.connectObject(
+        'child-removed', this.#update_position.bind(this),
+        'child-added', this.#update_position.bind(this),
+        this);
 
     this.connectObject(
       'key-press-event', this.#key_pressed.bind(this),
@@ -122,7 +136,9 @@ export class PopupMenu extends Anchored {
 
   add_menu_item(text, callback) {
     let item = new MenuItem(text);
-    item.connectObject('clicked', callback, this);
+    if (callback) {
+      item.connectObject('clicked', callback, this);
+    }
     item.connectObject('clicked', this.close_menu.bind(this), this);
     this.add_custom_item(item);
     return item;
@@ -141,6 +157,10 @@ export class PopupMenu extends Anchored {
 
   add_custom_item(widget) {
     this.#container.add_child(widget);
+  }
+
+  get_items() {
+    return this.#container.get_children();
   }
 
   #cleanup() {
@@ -169,6 +189,13 @@ export class PopupMenu extends Anchored {
       Main.popModal(this.#grab);
     }
     this.#grab = null;
+  }
+
+  #update_position() {
+    if (this.get_items().length === 0) {
+      this.close_menu();
+    }
+    this.put_near_anchor(this.#anchor);
   }
 
   close_menu() {

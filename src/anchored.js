@@ -36,9 +36,6 @@ export class Anchored extends St.Widget {
   }
 
   put_near_anchor(anchor) {
-    if (anchor._unmamaging) {
-      return;
-    }
     const padding = 5;
     const m = Main.layoutManager.primaryMonitor;
     let rect = anchor.get_transformed_extents();
