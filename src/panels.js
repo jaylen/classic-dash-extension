@@ -57,20 +57,14 @@ class WinButton extends Button {
   #window = null;
   #settings = null;
 
-  constructor(window, icon, settings) {
+  constructor(window, app, settings) {
 
     super();
     this.style_class_name(true, 'width-12');
     this.#window = window;
     this.#settings = settings;
 
-    if (icon) {
-      let x = new Icon('application-x-executable');
-      x.set_gicon(icon)
-      this.set_icon(x);
-    } else {
-      this.set_icon_name('application-x-executable');
-    }
+    this.set_icon(app.create_icon_texture(Icon.ICON_SIZE));
 
     let title = this.title;
     this.set_text(title);
@@ -261,12 +255,11 @@ export class WinPanel extends BoxPanel {
     } else {
       group = children;
     }
-    let icon = app.get_icon();
     if (group.length === 0) {
-      this.add_child(new WinButton(window, icon, this.#settings));
+      this.add_child(new WinButton(window, app, this.#settings));
     } else {
       let last = group.at(-1);
-      this.insert_child_above(new WinButton(window, icon, this.#settings), last);
+      this.insert_child_above(new WinButton(window, app, this.#settings), last);
     }
   }
 
