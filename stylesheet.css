@@ -19,14 +19,20 @@
   margin: 0.2em;
   padding: 0.1em;
   border-radius: 0.2em;
+  box-shadow: none;
+  transition-duration: 1s;
 }
 
 .classic-button:hover {
   background-color: #484848;
+  box-shadow: none;
 }
 
 .classic-button:active {
   background-color: #404040;
+  box-shadow: 0 0 0.1em #1c1c1c;
+  transform: scale(0.9);
+  transition-duration: 1s;
 }
 
 .classic-button.sysbtn {
