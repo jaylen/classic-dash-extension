@@ -68,7 +68,6 @@ class WinButton extends Button {
 
     let title = this.title;
     this.set_text(title);
-    this.set_tooltip_text(title);
 
     this.#window.connectObject(
       'unmanaging', this.#unmanageable.bind(this),
@@ -92,6 +91,11 @@ class WinButton extends Button {
 
     this.#update_style();
     this.#workspace();
+    this.#setup_show_tooltip();
+
+    this.#settings.connectObject(
+      'changed::win-button-show-tooltip', this.#setup_show_tooltip.bind(this),
+      this);
 
   }
 
@@ -154,7 +158,9 @@ class WinButton extends Button {
   #update_title() {
     let title = this.title;
     this.set_text(title);
-    this.set_tooltip_text(title);
+    if (this.#settings.get_boolean('win-button-show-tooltip')) {
+      this.set_tooltip_text(title);
+    }
   }
 
   #update_style() {
@@ -173,6 +179,14 @@ class WinButton extends Button {
   #workspace() {
     let workspace = global.workspace_manager.get_active_workspace();
     this.update_workspace(workspace);
+  }
+
+  #setup_show_tooltip() {
+    if (this.#settings.get_boolean('win-button-show-tooltip')) {
+      this.set_tooltip_text(`${this.title}`);
+    } else {
+      this.remove_tooltip_text();
+    }
   }
 
   #create_menu() {
@@ -306,11 +320,12 @@ class FavButton extends Button {
     this.#settings = settings;
     this.#sys = Shell.AppSystem.get_default();
     this.set_icon(app.create_icon_texture(Icon.ICON_SIZE));
-    this.set_tooltip_text(this.#app.get_name());
     this.connectObject('clicked', this.#launch.bind(this), this);
     this.#setup_app_state_changed();
+    this.#setup_show_tooltip();
     this.#settings.connectObject(
       'changed::fav-hide-when-running', this.#setup_app_state_changed.bind(this),
+      'changed::fav-button-show-tooltip', this.#setup_show_tooltip.bind(this),
       this);
   }
 
@@ -333,6 +348,14 @@ class FavButton extends Button {
     } else {
       this.#sys.disconnectObject(this);
       this.show();
+    }
+  }
+
+  #setup_show_tooltip() {
+    if (this.#settings.get_boolean('fav-button-show-tooltip')) {
+      this.set_tooltip_text(this.#app.get_name());
+    } else {
+      this.remove_tooltip_text();
     }
   }
 

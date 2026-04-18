@@ -229,6 +229,9 @@ export class Button extends BaseButton {
   #menu = null;
   #menu_button = Button.MOUSE_BUTTON_RIGHT;
 
+  #enter_event_id = null;
+  #leave_event_id = null;
+
   constructor(text, iconname) {
     super(text, iconname);
     this.connect('destroy', this.#cleanup.bind(this));
@@ -244,10 +247,20 @@ export class Button extends BaseButton {
     let first_time = this.#tooltip_text === null;
     this.#tooltip_text = text;
     if (first_time) {
-      this.connectObject(
-        'enter-event', this.#show_tooltip.bind(this),
-        'leave-event', this.#hide_tooltip.bind(this),
-        this);
+      this.#enter_event_id = this.connect('enter-event', this.#show_tooltip.bind(this));
+      this.#leave_event_id = this.connect('leave-event', this.#hide_tooltip.bind(this));
+    }
+  }
+
+  remove_tooltip_text() {
+    this.#tooltip_text = null;
+    if (this.#enter_event_id !== null) {
+      this.disconnect(this.#enter_event_id);
+      this.#enter_event_id = null;
+    }
+    if (this.#leave_event_id !== null) {
+      this.disconnect(this.#leave_event_id);
+      this.#leave_event_id = null;
     }
   }
 

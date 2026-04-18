@@ -87,6 +87,20 @@ export const params = {
     description: 'Title for the Applications button (use "icon:" prefix to replace text with an icon)',
     group: 'Miscellaneous',
   },
+  'fav-button-show-tooltip': {
+    type: 'b',
+    default: 'true',
+    summary: 'Show tooltips for quick app launchers',
+    description: 'Show tooltips for quick app launchers on mouse hover',
+    group: 'Miscellaneous',
+  },
+  'win-button-show-tooltip': {
+    type: 'b',
+    default: 'true',
+    summary: 'Show tooltips for window buttons',
+    description: 'Show tooltips for window buttons on mouse hover',
+    group: 'Miscellaneous',
+  },
 };
 
 function get_schemas_dir() {
