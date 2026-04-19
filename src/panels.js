@@ -115,8 +115,16 @@ class WinButton extends Button {
     return this.#window.minimized;
   }
 
+  get can_minimise() {
+    return this.#window.can_minimize();
+  }
+
   get selected() {
     return this.#window.has_focus();
+  }
+
+  get focused() {
+    return global.display.focus_window === this.#window;
   }
 
   get workspace_index() {
@@ -138,10 +146,11 @@ class WinButton extends Button {
   #clicked(actor, event) {
     let button = event.get_button();
     if (button === 1) { // left click
-      if (global.display.focus_window === this.#window) {
-        if (this.#window.can_minimize()) {
-          this.#window.minimize();
-        }
+      if (this.minimised && this.can_minimise) {
+        this.#window.unminimize();
+        this.#window.activate(global.get_current_time());
+      } else if (this.focused && this.can_minimise) {
+        this.#window.minimize();
       } else {
         this.#window.activate(global.get_current_time());
       }
